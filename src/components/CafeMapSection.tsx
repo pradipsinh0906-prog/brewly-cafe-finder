@@ -27,6 +27,8 @@ interface CafeMapSectionProps {
   currentLocation: string;
   onSelectLocation?: (loc: string) => void;
   userLocationCoords?: { lat: number; lng: number } | null;
+  isStandalonePage?: boolean;
+  onBackToDiscover?: () => void;
 }
 
 export const CafeMapSection: React.FC<CafeMapSectionProps> = ({
@@ -37,6 +39,8 @@ export const CafeMapSection: React.FC<CafeMapSectionProps> = ({
   currentLocation,
   onSelectLocation,
   userLocationCoords = null,
+  isStandalonePage = false,
+  onBackToDiscover,
 }) => {
   const [activeCafeId, setActiveCafeId] = useState<string>(
     selectedCafe ? selectedCafe.id : cafes[0]?.id || ''
@@ -94,6 +98,9 @@ export const CafeMapSection: React.FC<CafeMapSectionProps> = ({
         .addTo(map);
 
       mapInstanceRef.current = map;
+      setTimeout(() => {
+        map.invalidateSize();
+      }, 150);
     }
 
     return () => {
@@ -104,6 +111,22 @@ export const CafeMapSection: React.FC<CafeMapSectionProps> = ({
       }
     };
   }, []);
+
+  // Invalidate map size on standalone view or resize
+  useEffect(() => {
+    const handleResize = () => {
+      mapInstanceRef.current?.invalidateSize();
+    };
+    window.addEventListener('resize', handleResize);
+    const timer = setTimeout(() => {
+      mapInstanceRef.current?.invalidateSize();
+    }, 200);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      clearTimeout(timer);
+    };
+  }, [isStandalonePage]);
 
   // Update Markers when cafes, activeCafeId, or map changes
   useEffect(() => {
@@ -249,9 +272,31 @@ export const CafeMapSection: React.FC<CafeMapSectionProps> = ({
   const handleZoomOut = () => mapInstanceRef.current?.zoomOut();
 
   return (
-    <section id="map" className="py-16 sm:py-24 bg-[#15110F] relative">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section
+      id="map"
+      className={`bg-[#15110F] relative transition-all ${
+        isStandalonePage ? 'pt-24 sm:pt-28 pb-20' : 'py-16 sm:py-24'
+      }`}
+    >
+      <div id="map-section" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
+        {/* Standalone View Header with Back button */}
+        {isStandalonePage && (
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+            <button
+              onClick={onBackToDiscover}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#211A16] hover:bg-[#2A211C] border border-[#F6EBDD]/15 text-xs sm:text-sm font-semibold text-[#D8C5B5] hover:text-[#F6EBDD] transition-colors cursor-pointer group"
+            >
+              <span className="group-hover:-translate-x-0.5 transition-transform">←</span>
+              <span>Back to Discover Grid</span>
+            </button>
+            <div className="flex items-center gap-2 text-xs font-semibold text-[#C88A5A] bg-[#6F4E37]/20 border border-[#C88A5A]/30 px-3 py-1.5 rounded-full">
+              <Sparkles className="w-3.5 h-3.5 text-[#C88A5A]" />
+              <span>Full Interactive Map View</span>
+            </div>
+          </div>
+        )}
+
         {/* Neighborhood Pulse Panel */}
         <div className="mb-10 p-6 sm:p-8 rounded-[28px] bg-gradient-to-r from-[#211A16] via-[#2A211C] to-[#1F1713] border border-[#F6EBDD]/10 shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 right-0 w-96 h-96 bg-[#C88A5A]/5 rounded-full blur-3xl pointer-events-none" />

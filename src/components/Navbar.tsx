@@ -9,6 +9,7 @@ interface NavbarProps {
   onOpenFavorites: () => void;
   activeNav: string;
   setActiveNav: (nav: string) => void;
+  onNavClick?: (id: string, href?: string) => void;
   onGoHome?: () => void;
 }
 
@@ -19,6 +20,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenFavorites,
   activeNav,
   setActiveNav,
+  onNavClick,
   onGoHome,
 }) => {
   const [scrolled, setScrolled] = useState(false);
@@ -41,9 +43,13 @@ export const Navbar: React.FC<NavbarProps> = ({
   ];
 
   const handleNavClick = (id: string, href?: string) => {
+    setMobileMenuOpen(false);
+    if (onNavClick) {
+      onNavClick(id, href);
+      return;
+    }
     onGoHome?.();
     setActiveNav(id);
-    setMobileMenuOpen(false);
     if (id === 'favorites') {
       onOpenFavorites();
       return;
@@ -73,9 +79,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               href="#discover"
               onClick={(e) => {
                 e.preventDefault();
-                onGoHome?.();
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-                setActiveNav('discover');
+                handleNavClick('discover', '#discover');
               }}
               className="group flex items-center gap-2.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C88A5A] rounded-xl px-1 py-0.5"
             >

@@ -31,7 +31,7 @@ import {
 } from 'lucide-react';
 
 export default function App() {
-  const [currentView, setCurrentView] = useState<'home' | 'about' | 'privacy' | 'terms'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'map' | 'about' | 'privacy' | 'terms'>('home');
   const [currentLocation, setCurrentLocation] = useState('Ahmedabad');
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number }>(
     POPULAR_LOCATIONS[0].coordinates
@@ -125,19 +125,60 @@ export default function App() {
     setSelectedCafe(null);
     // Focus map on this specific cafe
     setSelectedMapCafe(cafe);
+    setActiveNav('map');
+    setCurrentView('map');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    showToast(`Viewing "${cafe.name}" on the map`, 'success');
+  };
 
-    if (currentView !== 'home') {
-      setCurrentView('home');
+  const handleNavClick = (id: string, href?: string) => {
+    setActiveNav(id);
+
+    if (id === 'map') {
+      setCurrentView('map');
+      setShowOnlyFavorites(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
     }
 
-    setTimeout(() => {
-      const mapElement = document.getElementById('map');
-      if (mapElement) {
-        mapElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    }, 60);
+    if (id === 'favorites') {
+      setCurrentView('home');
+      setShowOnlyFavorites(true);
+      setTimeout(() => {
+        const resultsElement = document.getElementById('results-section');
+        if (resultsElement) {
+          resultsElement.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 60);
+      return;
+    }
 
-    showToast(`Viewing "${cafe.name}" on the map`, 'success');
+    if (id === 'explore') {
+      setCurrentView('home');
+      setShowOnlyFavorites(false);
+      setTimeout(() => {
+        const el = document.getElementById('explore');
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 60);
+      return;
+    }
+
+    if (id === 'discover') {
+      setCurrentView('home');
+      setShowOnlyFavorites(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    if (href) {
+      setCurrentView('home');
+      setTimeout(() => {
+        const el = document.querySelector(href);
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      }, 60);
+    }
   };
 
   const handleSearch = (query: string) => {
@@ -152,11 +193,7 @@ export default function App() {
   };
 
   const handleOpenFavorites = () => {
-    setShowOnlyFavorites(true);
-    const resultsElement = document.getElementById('results-section');
-    if (resultsElement) {
-      resultsElement.scrollIntoView({ behavior: 'smooth' });
-    }
+    handleNavClick('favorites');
   };
 
   const handleShare = (cafe: Cafe) => {
@@ -217,15 +254,9 @@ export default function App() {
         favoritesCount={favorites.length}
         onOpenFavorites={handleOpenFavorites}
         activeNav={activeNav}
-        setActiveNav={(nav) => {
-          setActiveNav(nav);
-          setCurrentView('home');
-          if (nav !== 'favorites') setShowOnlyFavorites(false);
-        }}
-        onGoHome={() => {
-          setCurrentView('home');
-          setActiveNav('discover');
-        }}
+        setActiveNav={setActiveNav}
+        onNavClick={handleNavClick}
+        onGoHome={() => handleNavClick('discover', '#discover')}
       />
 
       <main className="flex-1" id="discover">
@@ -253,6 +284,21 @@ export default function App() {
               setCurrentView('home');
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
+          />
+        )}
+
+        {/* Dedicated Full Map Page View */}
+        {currentView === 'map' && (
+          <CafeMapSection
+            cafes={filteredCafes.length > 0 ? filteredCafes : cafesData}
+            selectedCafe={selectedMapCafe}
+            onSelectCafe={(cafe) => setSelectedMapCafe(cafe)}
+            onViewDetails={(cafe) => setSelectedCafe(cafe)}
+            currentLocation={currentLocation}
+            onSelectLocation={handleSelectLocation}
+            userLocationCoords={userCoords}
+            isStandalonePage={true}
+            onBackToDiscover={() => handleNavClick('discover', '#discover')}
           />
         )}
 
@@ -495,32 +541,7 @@ export default function App() {
 
       {/* Footer */}
       <Footer
-        onNavClick={(id, href) => {
-          if (currentView !== 'home') {
-            setCurrentView('home');
-            setTimeout(() => {
-              setActiveNav(id);
-              if (id === 'favorites') {
-                handleOpenFavorites();
-                return;
-              }
-              if (href) {
-                const el = document.querySelector(href);
-                if (el) el.scrollIntoView({ behavior: 'smooth' });
-              }
-            }, 100);
-            return;
-          }
-          setActiveNav(id);
-          if (id === 'favorites') {
-            handleOpenFavorites();
-            return;
-          }
-          if (href) {
-            const el = document.querySelector(href);
-            if (el) el.scrollIntoView({ behavior: 'smooth' });
-          }
-        }}
+        onNavClick={handleNavClick}
         onOpenPage={(page) => {
           setCurrentView(page);
           window.scrollTo({ top: 0, behavior: 'smooth' });
