@@ -1,0 +1,6 @@
+{
+  "name": "Brewly — Find Your Perfect Cafe",
+  "description": "Discover the best cafes tailored to your vibe, budget, and work needs with AI-powered cafe discovery.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
