@@ -100,3 +100,78 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #6F4E37;
 }
+
+/* Leaflet marker & tooltip enhancements */
+.brewly-pin-container {
+  overflow: visible !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+.brewly-pin-anchor {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform: translate(-50%, -100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: auto;
+  cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.brewly-pin-anchor:hover {
+  transform: translate(-50%, -100%) scale(1.08);
+}
+
+.brewly-pin-anchor:hover .brewly-pin-badge {
+  border-color: #C88A5A !important;
+  box-shadow: 0 10px 25px -4px rgba(0, 0, 0, 0.8), 0 0 15px rgba(200, 138, 90, 0.4) !important;
+}
+
+/* Cluster pin styling */
+.brewly-cluster-pin {
+  background: linear-gradient(135deg, #2A211C 0%, #15110F 100%);
+  border: 2px solid #C88A5A;
+  border-radius: 9999px;
+  padding: 5px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8), 0 0 16px rgba(200, 138, 90, 0.35);
+  cursor: pointer;
+  transition: all 0.2s ease-out;
+  white-space: nowrap;
+}
+
+.brewly-cluster-pin:hover {
+  background: linear-gradient(135deg, #6F4E37 0%, #2A211C 100%);
+  border-color: #F6EBDD;
+  transform: scale(1.06);
+}
+
+/* Tooltip dark glassmorphism styling */
+.leaflet-tooltip.brewly-marker-tooltip {
+  background: rgba(26, 20, 17, 0.96) !important;
+  border: 1px solid rgba(200, 138, 90, 0.35) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.75), 0 0 1px rgba(246, 235, 221, 0.25) !important;
+  padding: 8px 12px !important;
+  color: #F6EBDD !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+}
+
+.leaflet-tooltip-top.brewly-marker-tooltip::before {
+  border-top-color: rgba(26, 20, 17, 0.96) !important;
+}
+.leaflet-tooltip-bottom.brewly-marker-tooltip::before {
+  border-bottom-color: rgba(26, 20, 17, 0.96) !important;
+}
+.leaflet-tooltip-left.brewly-marker-tooltip::before {
+  border-left-color: rgba(26, 20, 17, 0.96) !important;
+}
+.leaflet-tooltip-right.brewly-marker-tooltip::before {
+  border-right-color: rgba(26, 20, 17, 0.96) !important;
+}
