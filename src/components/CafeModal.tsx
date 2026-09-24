@@ -76,10 +76,23 @@ export const CafeModal: React.FC<CafeModalProps> = ({
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#211A16] via-transparent to-black/30" />
 
-          {/* AI Match Badge */}
-          <div className="absolute top-4 left-4 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#15110F]/90 backdrop-blur-md border border-[#A98BFF]/40 text-xs font-bold text-[#A98BFF] shadow-lg">
-            <Sparkles className="w-3.5 h-3.5 text-[#A98BFF]" />
-            <span>{cafe.aiMatch}% AI Match</span>
+          {/* AI Match & OSM/Sample Data Badges */}
+          <div className="absolute top-4 left-4 flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#15110F]/90 backdrop-blur-md border border-[#A98BFF]/40 text-xs font-bold text-[#A98BFF] shadow-lg">
+              <Sparkles className="w-3.5 h-3.5 text-[#A98BFF]" />
+              <span>{cafe.aiMatch}% AI Match</span>
+            </div>
+            {cafe.isRealOsmData ? (
+              <div className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-[#15110F]/90 backdrop-blur-md border border-[#6FCF97]/50 text-xs font-bold text-[#6FCF97] shadow-md">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#6FCF97]" />
+                <span>OSM Real Cafe</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-[#15110F]/90 backdrop-blur-md border border-[#C88A5A]/45 text-xs font-bold text-[#C88A5A] shadow-md">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#C88A5A]" />
+                <span>Sample Data</span>
+              </div>
+            )}
           </div>
 
           <div className="absolute bottom-4 left-5 right-5 flex items-end justify-between">

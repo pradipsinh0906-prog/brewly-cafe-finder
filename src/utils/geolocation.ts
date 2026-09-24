@@ -73,57 +73,139 @@ export async function getBrowserGeolocation(): Promise<GeoCoordinates> {
 }
 
 /**
- * Reverse geocodes latitude & longitude into a human-readable neighborhood and city.
- * Uses client-side CORS-enabled BigDataCloud reverse geocoding API with fallback.
+ * Reverse geocodes latitude & longitude into a human-readable neighborhood and city using OpenStreetMap Nominatim.
  */
 export async function reverseGeocodeCoordinates(
   lat: number,
   lng: number
 ): Promise<GeocodedLocation> {
   try {
-    const url = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('Geocoding service unavailable');
-    
-    const data = await res.json();
-    
-    const neighborhood =
-      data.locality ||
-      data.subLocality ||
-      data.principalSubdivisionDescription ||
-      'Central District';
-
-    const city =
-      data.city ||
-      data.principalSubdivision ||
-      data.countryName ||
-      'Current Location';
-
-    const country = data.countryName || '';
-
-    // Create a clean display string like "Indiranagar, Bengaluru" or "SoHo, New York"
-    let displayName = `${neighborhood}, ${city}`;
-    if (neighborhood === city || !neighborhood) {
-      displayName = `${city}${country ? `, ${country}` : ''}`;
+    // 1. Try server proxy if available
+    try {
+      const proxyRes = await fetch(`/api/geocode?q=${lat},${lng}`);
+      if (proxyRes.ok) {
+        const data = await proxyRes.json();
+        if (Array.isArray(data) && data[0]?.address) {
+          const addr = data[0].address;
+          const neighborhood =
+            addr.suburb ||
+            addr.neighbourhood ||
+            addr.quarter ||
+            addr.residential ||
+            'Central District';
+          const city =
+            addr.city ||
+            addr.town ||
+            addr.village ||
+            addr.municipality ||
+            addr.state ||
+            'Local City';
+          const displayName =
+            neighborhood && neighborhood !== city
+              ? `${neighborhood}, ${city}`
+              : city;
+          return {
+            displayName,
+            neighborhood,
+            city,
+            country: addr.country || '',
+            coordinates: { lat, lng },
+          };
+        }
+      }
+    } catch {
+      // Fall through to direct fetch
     }
 
-    return {
-      displayName,
-      neighborhood,
-      city,
-      country,
-      coordinates: { lat, lng },
-    };
-  } catch {
-    // Graceful fallback if network fails
-    return {
-      displayName: `Near (${lat.toFixed(2)}°, ${lng.toFixed(2)}°)`,
-      neighborhood: 'Local Area',
-      city: 'Your City',
-      country: '',
-      coordinates: { lat, lng },
-    };
+    // 2. Direct Nominatim OpenStreetMap Reverse Geocoding
+    const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1`;
+    const res = await fetch(url, {
+      headers: {
+        Accept: 'application/json',
+      },
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      const addr = data.address || {};
+      const neighborhood =
+        addr.suburb ||
+        addr.neighbourhood ||
+        addr.quarter ||
+        addr.residential ||
+        addr.commercial ||
+        'Local Area';
+      const city =
+        addr.city ||
+        addr.town ||
+        addr.village ||
+        addr.municipality ||
+        addr.state ||
+        'Current Location';
+      const country = addr.country || '';
+      const displayName =
+        neighborhood && neighborhood !== city
+          ? `${neighborhood}, ${city}`
+          : city;
+
+      return {
+        displayName,
+        neighborhood,
+        city,
+        country,
+        coordinates: { lat, lng },
+      };
+    }
+  } catch (err) {
+    console.warn('Nominatim reverse geocoding warning:', err);
   }
+
+  // Graceful fallback
+  return {
+    displayName: `Near (${lat.toFixed(2)}°, ${lng.toFixed(2)}°)`,
+    neighborhood: 'Local Area',
+    city: 'Current Area',
+    country: '',
+    coordinates: { lat, lng },
+  };
+}
+
+/**
+ * Geocodes location name into coordinates using OpenStreetMap Nominatim API
+ */
+export async function geocodeLocationNameWithNominatim(
+  query: string
+): Promise<GeocodedLocation | null> {
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
+      query
+    )}&format=json&limit=1&addressdetails=1`;
+    const res = await fetch(url, {
+      headers: { Accept: 'application/json' },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (Array.isArray(data) && data.length > 0) {
+      const item = data[0];
+      const lat = parseFloat(item.lat);
+      const lng = parseFloat(item.lon);
+      const addr = item.address || {};
+      const neighborhood =
+        addr.suburb || addr.neighbourhood || addr.quarter || query.split(',')[0];
+      const city =
+        addr.city || addr.town || addr.municipality || addr.state || 'Local';
+      return {
+        displayName: item.display_name.split(',').slice(0, 2).join(', '),
+        neighborhood,
+        city,
+        country: addr.country || '',
+        coordinates: { lat, lng },
+      };
+    }
+  } catch (err) {
+    console.error('Nominatim geocode error:', err);
+  }
+  return null;
 }
 
 /**

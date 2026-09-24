@@ -72,10 +72,23 @@ export const CafeCard: React.FC<CafeCardProps> = ({
         {/* Ambient Gradient Scrim */}
         <div className="absolute inset-0 bg-gradient-to-t from-[#211A16] via-[#211A16]/20 to-transparent pointer-events-none" />
 
-        {/* AI Match Badge (Top Left) */}
-        <div className="absolute top-3.5 left-3.5 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#15110F]/85 backdrop-blur-md border border-[#A98BFF]/40 text-xs font-bold text-[#A98BFF] shadow-lg">
-          <Sparkles className="w-3.5 h-3.5 text-[#A98BFF]" />
-          <span>{cafe.aiMatch}% Match</span>
+        {/* AI Match & OSM/Sample Data Badges (Top Left) */}
+        <div className="absolute top-3.5 left-3.5 flex flex-wrap items-center gap-1.5 z-10">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#15110F]/85 backdrop-blur-md border border-[#A98BFF]/40 text-xs font-bold text-[#A98BFF] shadow-lg">
+            <Sparkles className="w-3.5 h-3.5 text-[#A98BFF]" />
+            <span>{cafe.aiMatch}% Match</span>
+          </div>
+          {cafe.isRealOsmData ? (
+            <div className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-[#15110F]/90 backdrop-blur-md border border-[#6FCF97]/50 text-[11px] font-bold text-[#6FCF97] shadow-md">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#6FCF97]" />
+              <span>OSM Spot</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-[#15110F]/90 backdrop-blur-md border border-[#C88A5A]/45 text-[11px] font-bold text-[#C88A5A] shadow-md">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#C88A5A]" />
+              <span>Sample Data</span>
+            </div>
+          )}
         </div>
 
         {/* Favorite Button (Top Right) */}

@@ -26,6 +26,7 @@ interface HeroProps {
   isLocating: boolean;
   selectedChip: string | null;
   setSelectedChip: (chipId: string | null) => void;
+  isRealOsmData?: boolean;
 }
 
 export const Hero: React.FC<HeroProps> = ({
@@ -36,6 +37,7 @@ export const Hero: React.FC<HeroProps> = ({
   isLocating,
   selectedChip,
   setSelectedChip,
+  isRealOsmData = false,
 }) => {
   const [isFocused, setIsFocused] = useState(false);
 
@@ -197,6 +199,29 @@ export const Hero: React.FC<HeroProps> = ({
 
             </div>
           </form>
+
+          {/* Sample Data / Demo Mode or OpenStreetMap Live Notice near search */}
+          <div className="flex items-center justify-center mt-3.5 mb-6">
+            {isRealOsmData ? (
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#1A261D]/95 border border-[#6FCF97]/40 text-xs text-[#F6EBDD] shadow-md backdrop-blur-sm">
+                <span className="flex h-2 w-2 relative shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#6FCF97] opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#6FCF97]"></span>
+                </span>
+                <span className="text-[#6FCF97] font-bold">OpenStreetMap Live:</span>
+                <span className="text-xs text-[#D8C5B5]">Real cafes discovered & AI enriched with Gemini</span>
+              </div>
+            ) : (
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#211A16]/95 border border-[#C88A5A]/35 text-xs text-[#D8C5B5] shadow-md backdrop-blur-sm">
+                <span className="flex h-2 w-2 relative shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#C88A5A] opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#C88A5A]"></span>
+                </span>
+                <span className="text-[#C88A5A] font-bold">OpenStreetMap Mode:</span>
+                <span className="text-xs">Search or tap "Use my location" for real cafes & Gemini insights</span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Quick Prompt Chips */}

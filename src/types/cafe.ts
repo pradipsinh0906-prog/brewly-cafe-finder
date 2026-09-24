@@ -33,6 +33,7 @@ export interface Cafe {
     lat: number;
     lng: number;
   };
+  isRealOsmData?: boolean;
 }
 
 export interface QuickPrompt {
