@@ -144,6 +144,7 @@ export const DEMO_CAFES: Cafe[] = [
 ];
 
 export const POPULAR_LOCATIONS = [
+  { city: 'Ahmedabad', area: 'Sindhu Bhavan & Bodakdev', label: 'Ahmedabad', coordinates: { lat: 23.0338, lng: 72.5186 } },
   { city: 'Bengaluru', area: 'Koramangala', label: 'Koramangala, Bengaluru', coordinates: { lat: 12.9345, lng: 77.6265 } },
   { city: 'Bengaluru', area: 'Indiranagar', label: 'Indiranagar, Bengaluru', coordinates: { lat: 12.9716, lng: 77.6412 } },
   { city: 'Mumbai', area: 'Bandra West', label: 'Bandra West, Mumbai', coordinates: { lat: 19.0596, lng: 72.8295 } },
@@ -153,6 +154,163 @@ export const POPULAR_LOCATIONS = [
 ];
 
 export const CAFES_BY_LOCATION: Record<string, Cafe[]> = {
+  'Ahmedabad': [
+    {
+      id: 'ahm-1',
+      name: 'The Dark Roast Roastery & Kitchen',
+      tagline: 'Minimalist specialty roastery with direct estate single-origins & quiet lofts',
+      image: roasteryImg,
+      rating: 4.9,
+      reviewCount: 780,
+      distance: '0.4 km away',
+      priceLevel: '₹₹',
+      priceEstimate: '₹450 for two',
+      isOpen: true,
+      openingHours: '8:00 AM – 11:30 PM',
+      address: 'Sindhu Bhavan Marg, PRL Colony, Bodakdev',
+      area: 'Ahmedabad',
+      category: 'Artisanal Roastery & Brew Bar',
+      amenities: ['High-Speed Fiber Wi-Fi (180 Mbps)', 'Power Outlets Every Desk', 'Silent Work Zones', 'Air Conditioned', 'Cold Brew Bar'],
+      aiMatch: 99,
+      aiReasoning: 'Top specialty coffee destination in Ahmedabad with meticulous pour-overs, artisan sourdough, and peaceful work ergonomics.',
+      vibeTags: ['Best Coffee', 'Work', 'Study'],
+      wifiSpeed: '185 Mbps',
+      noiseLevel: 'Quiet',
+      outlets: 'Every Table',
+      popularFor: 'Estate pour-over micro-lots, cold brew tonics, and quiet laptop sessions',
+      directionsUrl: 'https://maps.google.com/?q=23.0412,72.5124',
+      coordinates: { lat: 23.0412, lng: 72.5124 },
+      isRealOsmData: false,
+      signatureItems: [
+        { name: 'Chikmagalur Aeropress Micro-lot', price: '₹220', description: 'Bright berry notes, balanced body with honey process finish' },
+        { name: 'Pistachio Chocolate Babka', price: '₹240', description: 'Freshly baked laminated brioche with crushed Iranian pistachios' }
+      ]
+    },
+    {
+      id: 'ahm-2',
+      name: 'Mocha Bodakdev Courtyard & Cafe',
+      tagline: 'Lush tree-canopied garden seating, artisan pizzas & twilight iced brews',
+      image: botanicalImg,
+      rating: 4.8,
+      reviewCount: 1120,
+      distance: '0.8 km away',
+      priceLevel: '₹₹₹',
+      priceEstimate: '₹650 for two',
+      isOpen: true,
+      openingHours: '10:00 AM – 12:30 AM',
+      address: 'Near Judges Bungalow Cross Road, Bodakdev',
+      area: 'Ahmedabad',
+      category: 'Botanical Courtyard & Bistro',
+      amenities: ['Open Late Past Midnight', 'Outdoor Garden Patio', 'Ambient Jazz Soundtrack', 'High-Speed Wi-Fi', 'Pet Friendly'],
+      aiMatch: 97,
+      aiReasoning: 'Iconic open-air courtyard in Bodakdev featuring fairy-lit banyan trees, wonderful evening breeze, and artisan coffee mocktails.',
+      vibeTags: ['Outdoor', 'Date', 'Open Late'],
+      wifiSpeed: '120 Mbps',
+      noiseLevel: 'Moderate',
+      outlets: 'Ample Outlets',
+      popularFor: 'Romantic evening dates, chocolate avalanche shakes, and wood-fired flatbreads',
+      directionsUrl: 'https://maps.google.com/?q=23.0365,72.5198',
+      coordinates: { lat: 23.0365, lng: 72.5198 },
+      isRealOsmData: false,
+      signatureItems: [
+        { name: 'Cascara Iced Berry Spritzer', price: '₹240', description: 'Sparkling coffee cherry tea infused with wild raspberry' },
+        { name: 'Burrata Truffle Sourdough Flatbread', price: '₹360', description: 'Hand-stretched sourdough with fresh creamy burrata and basil oil' }
+      ]
+    },
+    {
+      id: 'ahm-3',
+      name: 'The Project Cafe Heritage House',
+      tagline: 'Bohemian art-gallery cafe with silent reading nooks & cardamom brews',
+      image: studyImg,
+      rating: 4.8,
+      reviewCount: 650,
+      distance: '1.2 km away',
+      priceLevel: '₹₹',
+      priceEstimate: '₹480 for two',
+      isOpen: true,
+      openingHours: '9:00 AM – 10:30 PM',
+      address: 'Yellow Brick Road, Near Polytech, Ambawadi',
+      area: 'Ahmedabad',
+      category: 'Art Gallery & Study Hub',
+      amenities: ['Silent Reading Pods', 'Fiber Wi-Fi (150 Mbps)', 'Power Outlets Every Desk', 'Rotating Art Exhibitions', 'Curated Library'],
+      aiMatch: 96,
+      aiReasoning: 'Creatives and students love the heritage brick aesthetics, tranquil sunlit reading alcoves, and aromatic iced lattes.',
+      vibeTags: ['Study', 'Work', 'Friends'],
+      wifiSpeed: '150 Mbps',
+      noiseLevel: 'Quiet',
+      outlets: 'Every Table',
+      popularFor: 'Deep focus study hours, indie art books, and iced saffron cardamom latte',
+      directionsUrl: 'https://maps.google.com/?q=23.0245,72.5482',
+      coordinates: { lat: 23.0245, lng: 72.5482 },
+      isRealOsmData: false,
+      signatureItems: [
+        { name: 'Iced Saffron Cardamom Latte', price: '₹230', description: 'Espresso with subtle saffron infusion and creamy almond milk' },
+        { name: 'Grilled Herb Focaccia Sandwich', price: '₹260', description: 'Sundried tomato pesto, buffalo mozzarella, and crisp garden greens' }
+      ]
+    },
+    {
+      id: 'ahm-4',
+      name: 'Kaffa Cerrado Specialty Espresso Lab',
+      tagline: 'Sleek architectural design, nitro cold brew taps & precision roasting',
+      image: minimalistImg,
+      rating: 4.9,
+      reviewCount: 480,
+      distance: '1.5 km away',
+      priceLevel: '₹₹',
+      priceEstimate: '₹420 for two',
+      isOpen: true,
+      openingHours: '8:30 AM – 11:00 PM',
+      address: 'SBR Titanium Square, Thaltej Cross Roads',
+      area: 'Ahmedabad',
+      category: 'Minimalist Espresso Bar',
+      amenities: ['Nitro Taps on Bar', 'Ultra-fast Wi-Fi (200 Mbps)', 'Comfortable High Chairs', 'Air Conditioned', 'Power Outlets'],
+      aiMatch: 95,
+      aiReasoning: 'State-of-the-art specialty coffee gear with baristas who weigh each shot to 0.1g precision and velvety smooth flat whites.',
+      vibeTags: ['Best Coffee', 'Work', 'Budget'],
+      wifiSpeed: '200 Mbps',
+      noiseLevel: 'Quiet',
+      outlets: 'Every Table',
+      popularFor: 'Nitro cold brew, pour-over cupping flights, and flaky almond croissants',
+      directionsUrl: 'https://maps.google.com/?q=23.0489,72.5075',
+      coordinates: { lat: 23.0489, lng: 72.5075 },
+      isRealOsmData: false,
+      signatureItems: [
+        { name: '18-Hour Nitro Cold Brew', price: '₹210', description: 'Creamy cascading head with dark cocoa undertones and natural sweetness' },
+        { name: 'French Butter Almond Croissant', price: '₹190', description: 'Double-baked croissant filled with rich frangipane cream' }
+      ]
+    },
+    {
+      id: 'ahm-5',
+      name: 'Varietea & Lakeview Coffee Lounge',
+      tagline: 'Panoramic vastrapur lake vistas, calming waterside deck & dessert sips',
+      image: botanicalImg,
+      rating: 4.7,
+      reviewCount: 920,
+      distance: '1.8 km away',
+      priceLevel: '₹',
+      priceEstimate: '₹350 for two',
+      isOpen: true,
+      openingHours: '9:00 AM – 11:00 PM',
+      address: 'Vastrapur Lake Front Promenade, Vastrapur',
+      area: 'Ahmedabad',
+      category: 'Waterside Promenade Cafe',
+      amenities: ['Lake View Seating', 'Pocket Friendly Menu', 'High-Speed Wi-Fi', 'Outdoor Deck', 'Dessert Counter'],
+      aiMatch: 93,
+      aiReasoning: 'Relaxing lakeside breeze and pocket-friendly coffee and mocktails right along Vastrapur Lake promenade.',
+      vibeTags: ['Outdoor', 'Budget', 'Friends'],
+      wifiSpeed: '110 Mbps',
+      noiseLevel: 'Moderate',
+      outlets: 'Ample Outlets',
+      popularFor: 'Sunset tea & coffee catchups, Belgian waffles, and lakeside walks',
+      directionsUrl: 'https://maps.google.com/?q=23.0375,72.5292',
+      coordinates: { lat: 23.0375, lng: 72.5292 },
+      isRealOsmData: false,
+      signatureItems: [
+        { name: 'Signature Hazelnut Frappe', price: '₹180', description: 'Rich blended iced espresso with roasted hazelnut drizzle' },
+        { name: 'Nutella Belgian Waffle', price: '₹220', description: 'Warm crisp waffle topped with warm Nutella and vanilla gelato' }
+      ]
+    }
+  ],
   'Koramangala, Bengaluru': [
     {
       id: 'krm-1',
@@ -872,7 +1030,7 @@ export function getCafesForLocation(locationLabel: string): Cafe[] {
     if (key && CAFES_BY_LOCATION[key]) {
       list = CAFES_BY_LOCATION[key];
     } else {
-      list = CAFES_BY_LOCATION['Koramangala, Bengaluru'] || DEMO_CAFES;
+      list = CAFES_BY_LOCATION['Ahmedabad'] || DEMO_CAFES;
     }
   }
 

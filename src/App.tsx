@@ -32,11 +32,11 @@ import {
 
 export default function App() {
   const [currentView, setCurrentView] = useState<'home' | 'about' | 'privacy' | 'terms'>('home');
-  const [currentLocation, setCurrentLocation] = useState('Koramangala, Bengaluru');
+  const [currentLocation, setCurrentLocation] = useState('Ahmedabad');
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number }>(
     POPULAR_LOCATIONS[0].coordinates
   );
-  const [cafesData, setCafesData] = useState<Cafe[]>(() => getCafesForLocation('Koramangala, Bengaluru'));
+  const [cafesData, setCafesData] = useState<Cafe[]>(() => getCafesForLocation('Ahmedabad'));
   const [isRealOsmData, setIsRealOsmData] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedChip, setSelectedChip] = useState<string | null>(null);
@@ -465,8 +465,8 @@ export default function App() {
         {/* Interactive Cafe Map Section */}
         <CafeMapSection
           cafes={filteredCafes.length > 0 ? filteredCafes : cafesData}
-          selectedCafe={selectedCafe}
-          onSelectCafe={(cafe) => setSelectedCafe(cafe)}
+          selectedCafe={selectedMapCafe}
+          onSelectCafe={(cafe) => setSelectedMapCafe(cafe)}
           onViewDetails={(cafe) => setSelectedCafe(cafe)}
           currentLocation={currentLocation}
           onSelectLocation={handleSelectLocation}
@@ -483,6 +483,7 @@ export default function App() {
         isFavorite={selectedCafe ? favorites.includes(selectedCafe.id) : false}
         onToggleFavorite={handleToggleFavorite}
         onShare={handleShare}
+        onViewOnMap={handleViewOnMap}
       />
 
       {/* Toast Notification */}

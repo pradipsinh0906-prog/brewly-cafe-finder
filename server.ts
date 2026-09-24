@@ -348,8 +348,27 @@ Return a valid JSON array of objects with the exact schema:
       const enriched = JSON.parse(text);
       return res.json({ enriched, source: 'gemini' });
     } catch (err: any) {
-      console.error('Gemini enrichment error:', err);
-      return res.status(500).json({ error: err.message || 'AI enrichment failed' });
+      console.warn('Gemini enrichment error, falling back to heuristic:', err?.message || err);
+      const { cafes } = req.body || {};
+      const enriched = (Array.isArray(cafes) ? cafes : []).map((c: any, index: number) => ({
+        id: c.id,
+        aiMatch: 86 + ((index * 7) % 13),
+        noiseLevel: index % 3 === 0 ? 'Quiet' : index % 3 === 1 ? 'Moderate' : 'Lively',
+        wifiSpeed: `${65 + (index * 15) % 65} Mbps`,
+        outlets: index % 2 === 0 ? 'Ample Outlets' : 'Limited Outlets',
+        aiReasoning: `Local favorite cafe near ${c.address || 'your location'}, known for fresh roast coffee and welcoming ambiance.`,
+        tagline: 'Local favorite specialty coffee & cozy ambiance',
+        vibeTags: ['Local Roast', 'Comfortable Seating', 'Community Hub'],
+        popularFor: 'Freshly brewed coffee & relaxed conversations',
+        priceLevel: '₹₹',
+        priceEstimate: '₹350 for two',
+        category: 'Specialty Cafe',
+        signatureItems: [
+          { name: 'House Espresso', price: '₹160', description: 'Rich crema and balanced cocoa profile' },
+          { name: 'Iced Vanilla Latte', price: '₹220', description: 'Smooth milk cold brew with Madagascar vanilla' }
+        ]
+      }));
+      return res.json({ enriched, source: 'heuristic' });
     }
   });
 
@@ -616,7 +635,9 @@ Generate JSON array of evaluated cafes:
     ];
 
     let prefixes = ['The Roost', 'Drift & Co.', 'Paper & Oak', 'Velvet Bean', 'Terra Roasters'];
-    if (locLower.includes('bandra')) {
+    if (locLower.includes('ahmedabad')) {
+      prefixes = ['Sindhu Bhavan', 'Bodakdev Garden', 'Vastrapur Lake', 'Sabarmati Riverfront', 'Ambawadi Heritage'];
+    } else if (locLower.includes('bandra')) {
       prefixes = ['Bandra Heritage', 'Sea Breeze', 'Chapel Road', 'Pali Hill', 'Ranwar'];
     } else if (locLower.includes('hauz')) {
       prefixes = ['Lakeview Monolith', 'Ruins & Beans', 'Deer Park', 'Qutub View', 'Heritage Hearth'];
@@ -675,9 +696,9 @@ Generate JSON array of evaluated cafes:
   // 5. Fresh AI Cafe Recommendations Generator tailored to selected Area using Gemini
   app.post('/api/ai/generate-cafes', async (req, res) => {
     try {
-      const { location = 'Koramangala, Bengaluru', coordinates, searchQuery = '' } = req.body;
-      const baseLat = typeof coordinates?.lat === 'number' ? coordinates.lat : 12.9345;
-      const baseLng = typeof coordinates?.lng === 'number' ? coordinates.lng : 77.6265;
+      const { location = 'Ahmedabad', coordinates, searchQuery = '' } = req.body;
+      const baseLat = typeof coordinates?.lat === 'number' ? coordinates.lat : 23.0338;
+      const baseLng = typeof coordinates?.lng === 'number' ? coordinates.lng : 72.5186;
 
       if (!ai) {
         console.log('Gemini API client not initialized, using localized fallback generator');

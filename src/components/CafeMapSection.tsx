@@ -69,8 +69,8 @@ export const CafeMapSection: React.FC<CafeMapSectionProps> = ({
     if (!mapContainerRef.current) return;
 
     if (!mapInstanceRef.current) {
-      const initialLat = userLocationCoords?.lat ?? activeCafe?.coordinates?.lat ?? 12.9784;
-      const initialLng = userLocationCoords?.lng ?? activeCafe?.coordinates?.lng ?? 77.6408;
+      const initialLat = userLocationCoords?.lat ?? activeCafe?.coordinates?.lat ?? 23.0338;
+      const initialLng = userLocationCoords?.lng ?? activeCafe?.coordinates?.lng ?? 72.5186;
 
       const map = L.map(mapContainerRef.current, {
         center: [initialLat, initialLng],
@@ -220,6 +220,19 @@ export const CafeMapSection: React.FC<CafeMapSectionProps> = ({
       duration: 0.6,
     });
   }, [activeCafe]);
+
+  // Fit map when cafes array updates to show all pins
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map || cafes.length === 0) return;
+
+    try {
+      const bounds = L.latLngBounds(cafes.map((c) => [c.coordinates.lat, c.coordinates.lng]));
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
+    } catch {
+      // fallback safe ignore
+    }
+  }, [cafes]);
 
   // Recenter map on active cafe or area center
   const handleRecenter = () => {
