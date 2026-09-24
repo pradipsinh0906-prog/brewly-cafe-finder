@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, MapPin, Menu, X, Heart, Compass, Coffee, ChevronDown, Check, Crosshair } from 'lucide-react';
+import { Sparkles, MapPin, Menu, X, Heart, Compass, Coffee, ChevronDown, Check } from 'lucide-react';
 import { POPULAR_LOCATIONS } from '../data/cafes';
 
 interface NavbarProps {
@@ -9,8 +9,6 @@ interface NavbarProps {
   onOpenFavorites: () => void;
   activeNav: string;
   setActiveNav: (nav: string) => void;
-  onUseCurrentLocation?: () => void;
-  isLocating?: boolean;
   onGoHome?: () => void;
 }
 
@@ -21,8 +19,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenFavorites,
   activeNav,
   setActiveNav,
-  onUseCurrentLocation,
-  isLocating = false,
   onGoHome,
 }) => {
   const [scrolled, setScrolled] = useState(false);
@@ -149,24 +145,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                 {/* Dropdown Menu */}
                 {locationDropdownOpen && (
                   <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-[#211A16] border border-[#F6EBDD]/15 shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 duration-150">
-                    {onUseCurrentLocation && (
-                      <div className="pb-1.5 mb-1.5 border-b border-[#F6EBDD]/10">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setLocationDropdownOpen(false);
-                            onUseCurrentLocation();
-                          }}
-                          disabled={isLocating}
-                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold bg-[#6F4E37]/30 hover:bg-[#6F4E37]/50 text-[#C88A5A] hover:text-[#F6EBDD] transition-colors cursor-pointer disabled:opacity-50"
-                        >
-                          <Crosshair className={`w-4 h-4 text-[#C88A5A] ${isLocating ? 'animate-spin' : ''}`} />
-                          <span>{isLocating ? 'Detecting Location...' : 'Use My Exact Location'}</span>
-                        </button>
-                      </div>
-                    )}
                     <div className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-[#D8C5B5]/70">
-                      Popular Hubs
+                      Popular Areas
                     </div>
                     <div className="mt-1 space-y-1">
                       {POPULAR_LOCATIONS.map((loc) => {

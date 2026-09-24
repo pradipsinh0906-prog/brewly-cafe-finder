@@ -12,18 +12,18 @@ import {
   Coins,
   Moon,
   ArrowRight,
-  Crosshair,
-  Loader2,
+  ChevronDown,
+  Check,
 } from 'lucide-react';
-import { QUICK_PROMPTS } from '../data/cafes';
+import { QUICK_PROMPTS, POPULAR_LOCATIONS } from '../data/cafes';
 import { QuickPrompt } from '../types/cafe';
 
 interface HeroProps {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   onSearch: (query: string) => void;
-  onUseCurrentLocation: () => void;
-  isLocating: boolean;
+  currentLocation: string;
+  onSelectLocation: (loc: string) => void;
   selectedChip: string | null;
   setSelectedChip: (chipId: string | null) => void;
   isRealOsmData?: boolean;
@@ -33,13 +33,14 @@ export const Hero: React.FC<HeroProps> = ({
   searchQuery,
   setSearchQuery,
   onSearch,
-  onUseCurrentLocation,
-  isLocating,
+  currentLocation,
+  onSelectLocation,
   selectedChip,
   setSelectedChip,
   isRealOsmData = false,
 }) => {
   const [isFocused, setIsFocused] = useState(false);
+  const [locationDropdownOpen, setLocationDropdownOpen] = useState(false);
 
   const getChipIcon = (iconName: string) => {
     switch (iconName) {
@@ -170,21 +171,55 @@ export const Hero: React.FC<HeroProps> = ({
               {/* Action Buttons Zone */}
               <div className="flex items-center gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#F6EBDD]/10">
                 
-                {/* Use my location button */}
-                <button
-                  type="button"
-                  onClick={onUseCurrentLocation}
-                  disabled={isLocating}
-                  className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-full bg-[#15110F] hover:bg-[#2A211C] border border-[#F6EBDD]/15 text-xs sm:text-sm font-semibold text-[#D8C5B5] hover:text-[#F6EBDD] transition-all cursor-pointer whitespace-nowrap active:scale-95 disabled:opacity-50"
-                  title="Use my current GPS location"
-                >
-                  {isLocating ? (
-                    <Loader2 className="w-3.5 h-3.5 text-[#C88A5A] animate-spin" />
-                  ) : (
-                    <Crosshair className="w-3.5 h-3.5 text-[#C88A5A]" />
+                {/* Manual Location Selector Dropdown */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setLocationDropdownOpen(!locationDropdownOpen)}
+                    className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-full bg-[#15110F] hover:bg-[#2A211C] border border-[#F6EBDD]/15 text-xs sm:text-sm font-semibold text-[#F6EBDD] transition-all cursor-pointer whitespace-nowrap active:scale-95"
+                    title="Select area or city"
+                    aria-expanded={locationDropdownOpen}
+                  >
+                    <MapPin className="w-3.5 h-3.5 text-[#C88A5A]" />
+                    <span className="max-w-[110px] sm:max-w-[140px] truncate">{currentLocation}</span>
+                    <ChevronDown className={`w-3.5 h-3.5 text-[#D8C5B5] transition-transform ${locationDropdownOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {/* Dropdown Menu */}
+                  {locationDropdownOpen && (
+                    <div className="absolute right-0 top-full mt-2 w-64 rounded-2xl bg-[#211A16] border border-[#F6EBDD]/15 shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 duration-150">
+                      <div className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-[#D8C5B5]/70">
+                        Popular Areas
+                      </div>
+                      <div className="mt-1 space-y-1 max-h-64 overflow-y-auto">
+                        {POPULAR_LOCATIONS.map((loc) => {
+                          const isSelected = currentLocation === loc.label;
+                          return (
+                            <button
+                              key={loc.label}
+                              type="button"
+                              onClick={() => {
+                                onSelectLocation(loc.label);
+                                setLocationDropdownOpen(false);
+                              }}
+                              className={`w-full flex items-center justify-between px-3 py-2 text-xs sm:text-sm rounded-xl text-left transition-colors cursor-pointer ${
+                                isSelected
+                                  ? 'bg-[#6F4E37]/40 text-[#F6EBDD] font-semibold'
+                                  : 'text-[#D8C5B5] hover:bg-[#F6EBDD]/8 hover:text-[#F6EBDD]'
+                              }`}
+                            >
+                              <div className="flex flex-col">
+                                <span className="font-semibold text-[#F6EBDD]">{loc.area}</span>
+                                <span className="text-[11px] text-[#D8C5B5]/65">{loc.city}</span>
+                              </div>
+                              {isSelected && <Check className="w-4 h-4 text-[#6FCF97] shrink-0" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
                   )}
-                  <span>Use my location</span>
-                </button>
+                </div>
 
                 {/* Discover button */}
                 <button
@@ -200,27 +235,41 @@ export const Hero: React.FC<HeroProps> = ({
             </div>
           </form>
 
-          {/* Sample Data / Demo Mode or OpenStreetMap Live Notice near search */}
-          <div className="flex items-center justify-center mt-3.5 mb-6">
-            {isRealOsmData ? (
-              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#1A261D]/95 border border-[#6FCF97]/40 text-xs text-[#F6EBDD] shadow-md backdrop-blur-sm">
-                <span className="flex h-2 w-2 relative shrink-0">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#6FCF97] opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#6FCF97]"></span>
-                </span>
-                <span className="text-[#6FCF97] font-bold">OpenStreetMap Live:</span>
-                <span className="text-xs text-[#D8C5B5]">Real cafes discovered & AI enriched with Gemini</span>
-              </div>
-            ) : (
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#211A16]/95 border border-[#C88A5A]/35 text-xs text-[#D8C5B5] shadow-md backdrop-blur-sm">
-                <span className="flex h-2 w-2 relative shrink-0">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#C88A5A] opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#C88A5A]"></span>
-                </span>
-                <span className="text-[#C88A5A] font-bold">OpenStreetMap Mode:</span>
-                <span className="text-xs">Search or tap "Use my location" for real cafes & Gemini insights</span>
-              </div>
-            )}
+          {/* Popular Area Quick Suggestion Chips */}
+          <div className="flex items-center justify-center gap-1.5 flex-wrap mt-3.5 mb-2.5">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-[#D8C5B5]/50 mr-1 flex items-center gap-1">
+              <MapPin className="w-3 h-3 text-[#C88A5A]" />
+              <span>Areas:</span>
+            </span>
+            {POPULAR_LOCATIONS.map((loc) => {
+              const isSelected = currentLocation === loc.label;
+              return (
+                <button
+                  key={loc.label}
+                  type="button"
+                  onClick={() => onSelectLocation(loc.label)}
+                  className={`px-3 py-1 rounded-full text-xs transition-all cursor-pointer ${
+                    isSelected
+                      ? 'bg-[#6F4E37] text-[#F6EBDD] border border-[#C88A5A] shadow-sm font-bold'
+                      : 'bg-[#211A16]/90 text-[#D8C5B5] border border-[#F6EBDD]/12 hover:border-[#C88A5A]/50 hover:text-[#F6EBDD]'
+                  }`}
+                >
+                  {loc.area}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Area Mode Notice */}
+          <div className="flex items-center justify-center mt-2 mb-6">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#211A16]/95 border border-[#C88A5A]/35 text-xs text-[#D8C5B5] shadow-md backdrop-blur-sm">
+              <span className="flex h-2 w-2 relative shrink-0">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#C88A5A] opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#C88A5A]"></span>
+              </span>
+              <span className="text-[#C88A5A] font-bold">Sample Cafes for:</span>
+              <span className="text-xs text-[#F6EBDD] font-semibold">{currentLocation}</span>
+            </div>
           </div>
         </div>
 

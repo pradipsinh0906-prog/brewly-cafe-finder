@@ -106,38 +106,119 @@ export async function reverseGeocodeWithNominatim(
 }
 
 /**
- * Search real cafes near coordinates using free Overpass API (OpenStreetMap)
+ * Search real cafes near coordinates using free Overpass API or Nominatim Bounded search with radius expansion
  */
 export async function fetchRealCafesFromOverpass(
   lat: number,
   lng: number,
-  radius: number = 3500
-): Promise<any[]> {
-  const overpassQuery = `[out:json][timeout:25];
+  baseRadius: number = 2500
+): Promise<{ elements: any[]; radiusUsed: number; source: string }> {
+  const radii = [baseRadius, 5000, 9000, 15000].filter((r, idx, arr) => arr.indexOf(r) === idx);
+
+  for (const radius of radii) {
+    // 1. Try Overpass API with quick timeout
+    const overpassQuery = `[out:json][timeout:15];
 (
   node["amenity"="cafe"](around:${radius}, ${lat}, ${lng});
   way["amenity"="cafe"](around:${radius}, ${lat}, ${lng});
   node["amenity"="coffee_shop"](around:${radius}, ${lat}, ${lng});
   way["amenity"="coffee_shop"](around:${radius}, ${lat}, ${lng});
 );
-out center tags 30;`;
+out center tags 35;`;
 
-  try {
-    const response = await fetch('https://overpass-api.de/api/interpreter', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: `data=${encodeURIComponent(overpassQuery)}`,
-    });
+    const mirrors = [
+      'https://overpass-api.de/api/interpreter',
+      'https://overpass.kumi.systems/api/interpreter',
+      'https://lz4.overpass-api.de/api/interpreter',
+    ];
 
-    if (!response.ok) return [];
-    const data = await response.json();
-    return data.elements || [];
-  } catch (err) {
-    console.error('Direct Overpass fetch error:', err);
-    return [];
+    for (const mirror of mirrors) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3500);
+
+        const response = await fetch(mirror, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'User-Agent': 'BrewlyCafeApp/1.0 (info@brewly.coffee)',
+          },
+          body: `data=${encodeURIComponent(overpassQuery)}`,
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+
+        if (response.ok) {
+          const data = await response.json();
+          const items = data.elements || [];
+          const named = items.filter((el: any) => el.tags && (el.tags.name || el.tags['name:en']));
+          if (named.length >= 3) {
+            return { elements: named, radiusUsed: radius, source: 'Overpass API' };
+          }
+        }
+      } catch (_err) {
+        // Continue
+      }
+    }
+
+    // 2. OpenStreetMap Nominatim Bounded Search Fallback
+    try {
+      const delta = (radius / 111320) * 1.0;
+      const minLng = (lng - delta).toFixed(5);
+      const maxLat = (lat + delta).toFixed(5);
+      const maxLng = (lng + delta).toFixed(5);
+      const minLat = (lat - delta).toFixed(5);
+
+      const url = `https://nominatim.openstreetmap.org/search?q=cafe&format=json&addressdetails=1&limit=30&viewbox=${minLng},${maxLat},${maxLng},${minLat}&bounded=1`;
+      const nomResp = await fetch(url, {
+        headers: {
+          'User-Agent': 'BrewlyCafeApp/1.0 (info@brewly.coffee)',
+          Accept: 'application/json',
+        },
+      });
+
+      if (nomResp.ok) {
+        const data = await nomResp.json();
+        if (Array.isArray(data) && data.length > 0) {
+          const seen = new Set<string>();
+          const mapped: any[] = [];
+
+          for (const item of data) {
+            const key = String(item.osm_id || item.place_id);
+            if (seen.has(key)) continue;
+            seen.add(key);
+
+            const cafeName = item.name || item.display_name?.split(',')[0] || '';
+            if (!cafeName || cafeName.length < 2) continue;
+
+            const addr = item.address || {};
+            mapped.push({
+              id: item.osm_id || item.place_id,
+              lat: parseFloat(item.lat),
+              lon: parseFloat(item.lon),
+              tags: {
+                name: cafeName,
+                'addr:street': addr.road || addr.street || addr.neighbourhood || '',
+                'addr:city': addr.city || addr.town || addr.municipality || '',
+                'addr:suburb': addr.suburb || addr.neighbourhood || '',
+                'addr:housenumber': addr.house_number || '',
+                amenity: 'cafe',
+                opening_hours: '8:00 AM – 10:30 PM',
+              },
+            });
+          }
+
+          if (mapped.length >= 3) {
+            return { elements: mapped, radiusUsed: radius, source: 'OpenStreetMap' };
+          }
+        }
+      }
+    } catch (_nomErr) {
+      // Continue
+    }
   }
+
+  return { elements: [], radiusUsed: 15000, source: 'None' };
 }
 
 /**
@@ -198,7 +279,8 @@ export async function discoverRealCafes({
     targetLng = 77.6408;
   }
 
-  const rawElements = await fetchRealCafesFromOverpass(targetLat, targetLng, 3500);
+  const osmResult = await fetchRealCafesFromOverpass(targetLat, targetLng, 2500);
+  const rawElements = osmResult.elements;
 
   const validElements = rawElements.filter((el) => {
     const name = el.tags?.name || el.tags?.['name:en'];

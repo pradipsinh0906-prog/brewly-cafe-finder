@@ -249,6 +249,7 @@ export function adaptCafesToUserLocation(
       area: `${locationInfo.neighborhood || locationInfo.city}`,
       address: `${cafe.address.split(',')[0]}, ${locationInfo.neighborhood}`,
       directionsUrl: `https://www.google.com/maps/dir/?api=1&origin=${userCoords.lat},${userCoords.lng}&destination=${cafeLat},${cafeLng}`,
+      isRealOsmData: false,
     };
   });
 }

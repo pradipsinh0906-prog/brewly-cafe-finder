@@ -10,7 +10,6 @@ import {
   Wifi,
   Clock,
   Eye,
-  Crosshair,
   ExternalLink,
   ChevronRight,
   Layers,
@@ -18,6 +17,7 @@ import {
   Volume2,
 } from 'lucide-react';
 import { Cafe } from '../types/cafe';
+import { POPULAR_LOCATIONS } from '../data/cafes';
 
 interface CafeMapSectionProps {
   cafes: Cafe[];
@@ -25,8 +25,7 @@ interface CafeMapSectionProps {
   onSelectCafe: (cafe: Cafe) => void;
   onViewDetails: (cafe: Cafe) => void;
   currentLocation: string;
-  onUseCurrentLocation: () => void;
-  isLocating: boolean;
+  onSelectLocation?: (loc: string) => void;
   userLocationCoords?: { lat: number; lng: number } | null;
 }
 
@@ -36,8 +35,7 @@ export const CafeMapSection: React.FC<CafeMapSectionProps> = ({
   onSelectCafe,
   onViewDetails,
   currentLocation,
-  onUseCurrentLocation,
-  isLocating,
+  onSelectLocation,
   userLocationCoords = null,
 }) => {
   const [activeCafeId, setActiveCafeId] = useState<string>(
@@ -223,13 +221,13 @@ export const CafeMapSection: React.FC<CafeMapSectionProps> = ({
     });
   }, [activeCafe]);
 
-  // Center on user location
-  const handleCenterOnUser = () => {
+  // Recenter map on active cafe or area center
+  const handleRecenter = () => {
     const map = mapInstanceRef.current;
-    if (userLocationCoords && map) {
-      map.flyTo([userLocationCoords.lat, userLocationCoords.lng], 15, { duration: 1 });
-    } else {
-      onUseCurrentLocation();
+    if (activeCafe && map) {
+      map.flyTo([activeCafe.coordinates.lat, activeCafe.coordinates.lng], 15, { duration: 0.8 });
+    } else if (userLocationCoords && map) {
+      map.flyTo([userLocationCoords.lat, userLocationCoords.lng], 14, { duration: 0.8 });
     }
   };
 
@@ -253,7 +251,7 @@ export const CafeMapSection: React.FC<CafeMapSectionProps> = ({
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#6FCF97]"></span>
                 </span>
                 <span className="text-xs font-bold uppercase tracking-wider text-[#6FCF97]">
-                  OpenStreetMap Live Feed
+                  Neighborhood Spotlight
                 </span>
                 <span className="text-xs text-[#D8C5B5]/60">•</span>
                 <span className="text-xs text-[#C88A5A] font-semibold">
@@ -264,20 +262,26 @@ export const CafeMapSection: React.FC<CafeMapSectionProps> = ({
                 Interactive Cafe Map & Real-Time Spotter
               </h2>
               <p className="text-xs sm:text-sm text-[#D8C5B5]/80 mt-1 max-w-xl">
-                Browse verified spots from OpenStreetMap with AI-analyzed acoustics, Wi-Fi speeds, and live distance calculations.
+                Explore popular curated cafes in {currentLocation} with AI match scores, Wi-Fi speeds, and live distance calculations.
               </p>
             </div>
 
-            <div className="flex items-center gap-3 shrink-0">
-              <button
-                onClick={onUseCurrentLocation}
-                disabled={isLocating}
-                className="px-4 py-2.5 rounded-full bg-[#6F4E37]/30 hover:bg-[#6F4E37]/50 border border-[#C88A5A]/30 text-xs sm:text-sm font-semibold text-[#F6EBDD] flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50"
-              >
-                <Crosshair className={`w-4 h-4 text-[#C88A5A] ${isLocating ? 'animate-spin' : ''}`} />
-                <span>{isLocating ? 'Locating...' : 'Center On Me'}</span>
-              </button>
-            </div>
+            {onSelectLocation && (
+              <div className="flex items-center gap-2.5 shrink-0">
+                <span className="text-xs text-[#D8C5B5]/70 hidden sm:inline">Switch Area:</span>
+                <select
+                  value={currentLocation}
+                  onChange={(e) => onSelectLocation(e.target.value)}
+                  className="px-4 py-2.5 rounded-full bg-[#15110F] border border-[#F6EBDD]/20 text-xs sm:text-sm font-bold text-[#F6EBDD] hover:border-[#C88A5A] transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#C88A5A]"
+                >
+                  {POPULAR_LOCATIONS.map((loc) => (
+                    <option key={loc.label} value={loc.label} className="bg-[#211A16] text-[#F6EBDD]">
+                      {loc.area} ({loc.city})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
 
           {/* Quick Metrics */}
@@ -285,13 +289,13 @@ export const CafeMapSection: React.FC<CafeMapSectionProps> = ({
             <div className="p-3 rounded-2xl bg-[#15110F]/60 border border-[#F6EBDD]/5">
               <div className="text-xs text-[#D8C5B5]/70">Spots Mapped</div>
               <div className="text-lg font-bold text-[#F6EBDD] font-display mt-0.5">
-                {cafes.length} Real Cafes
+                {cafes.length} Sample Spots
               </div>
             </div>
             <div className="p-3 rounded-2xl bg-[#15110F]/60 border border-[#F6EBDD]/5">
               <div className="text-xs text-[#D8C5B5]/70">Data Source</div>
-              <div className="text-lg font-bold text-[#6FCF97] font-display mt-0.5">
-                OpenStreetMap
+              <div className="text-lg font-bold text-[#C88A5A] font-display mt-0.5">
+                Sample Data
               </div>
             </div>
             <div className="p-3 rounded-2xl bg-[#15110F]/60 border border-[#F6EBDD]/5">
@@ -309,7 +313,7 @@ export const CafeMapSection: React.FC<CafeMapSectionProps> = ({
           </div>
         </div>
 
-        {/* Map Layout: Left Side List, Right Side OpenStreetMap */}
+        {/* Map Layout: Left Side List, Right Side Interactive Map */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           
           {/* Cafe List (Desktop: Left 5 columns) */}
@@ -318,9 +322,9 @@ export const CafeMapSection: React.FC<CafeMapSectionProps> = ({
               <span className="text-xs font-semibold text-[#D8C5B5]/70 uppercase tracking-wider">
                 Select a cafe to focus map ({cafes.length})
               </span>
-              <span className="text-xs text-[#A98BFF] font-medium flex items-center gap-1">
-                <Sparkles className="w-3 h-3" />
-                Live OSM
+              <span className="text-xs text-[#C88A5A] font-medium flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#C88A5A]" />
+                Sample Data
               </span>
             </div>
 
@@ -360,8 +364,8 @@ export const CafeMapSection: React.FC<CafeMapSectionProps> = ({
                         <p className="text-xs text-[#D8C5B5]/80 line-clamp-1">
                           {cafe.category}
                         </p>
-                        <span className="px-1.5 py-0.5 rounded bg-[#6FCF97]/15 text-[10px] font-bold text-[#6FCF97] border border-[#6FCF97]/30 shrink-0">
-                          OSM Verified
+                        <span className="px-1.5 py-0.5 rounded bg-[#6F4E37]/30 text-[10px] font-bold text-[#C88A5A] border border-[#C88A5A]/30 shrink-0">
+                          Sample Data
                         </span>
                       </div>
 
@@ -409,11 +413,11 @@ export const CafeMapSection: React.FC<CafeMapSectionProps> = ({
               {/* Map Floating Tools (Top Right) */}
               <div className="absolute top-4 right-4 z-[500] flex flex-col gap-2">
                 <button
-                  onClick={handleCenterOnUser}
-                  title="Locate me"
+                  onClick={handleRecenter}
+                  title="Recenter Map"
                   className="w-10 h-10 rounded-xl bg-[#211A16]/95 hover:bg-[#2A211C] border border-[#F6EBDD]/20 text-[#F6EBDD] flex items-center justify-center shadow-lg backdrop-blur-md transition-all cursor-pointer"
                 >
-                  <Crosshair className={`w-4 h-4 text-[#C88A5A] ${isLocating ? 'animate-spin' : ''}`} />
+                  <MapPin className="w-4 h-4 text-[#C88A5A]" />
                 </button>
                 <button
                   onClick={handleZoomIn}
@@ -434,9 +438,9 @@ export const CafeMapSection: React.FC<CafeMapSectionProps> = ({
               {/* Map Floating Badge (Top Left) */}
               <div className="absolute top-4 left-4 z-[500] pointer-events-none">
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#15110F]/90 backdrop-blur-md border border-[#F6EBDD]/15 text-xs text-[#D8C5B5] shadow-lg">
-                  <span className="w-2 h-2 rounded-full bg-[#6FCF97]" />
-                  <span className="font-semibold text-[#F6EBDD]">OpenStreetMap Engine</span>
-                  <span className="text-[#A98BFF] font-medium">· Free & Live</span>
+                  <span className="w-2 h-2 rounded-full bg-[#C88A5A]" />
+                  <span className="font-semibold text-[#F6EBDD]">Sample Data Mode</span>
+                  <span className="text-[#C88A5A] font-medium">· Demo Preview</span>
                 </div>
               </div>
 
@@ -457,8 +461,8 @@ export const CafeMapSection: React.FC<CafeMapSectionProps> = ({
                             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#A98BFF]/20 text-[#A98BFF] border border-[#A98BFF]/30">
                               {activeCafe.aiMatch}% Match
                             </span>
-                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[#6FCF97]/20 text-[#6FCF97] border border-[#6FCF97]/30">
-                              OSM Cafe
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[#6F4E37]/30 text-[#C88A5A] border border-[#C88A5A]/30">
+                              Sample Data
                             </span>
                             <span className="text-xs text-[#6FCF97] font-semibold flex items-center gap-1">
                               <span className="w-1.5 h-1.5 rounded-full bg-[#6FCF97]" />
@@ -503,15 +507,20 @@ export const CafeMapSection: React.FC<CafeMapSectionProps> = ({
                           <Eye className="w-3.5 h-3.5" />
                           <span>View Details</span>
                         </button>
-                        <a
-                          href={activeCafe.directionsUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const map = mapInstanceRef.current;
+                            if (map && activeCafe) {
+                              map.flyTo([activeCafe.coordinates.lat, activeCafe.coordinates.lng], 16, { duration: 0.8 });
+                            }
+                          }}
                           className="flex-1 sm:flex-none px-4 py-2 rounded-full bg-gradient-to-r from-[#6F4E37] to-[#C88A5A] hover:brightness-110 text-xs font-bold text-[#F6EBDD] flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-md"
+                          title="Focus pin on map"
                         >
-                          <Navigation className="w-3.5 h-3.5" />
-                          <span>Directions</span>
-                        </a>
+                          <MapPin className="w-3.5 h-3.5" />
+                          <span>Focus Pin</span>
+                        </button>
                       </div>
 
                     </div>

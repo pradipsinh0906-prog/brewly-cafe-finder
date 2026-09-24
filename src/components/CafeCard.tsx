@@ -19,6 +19,7 @@ interface CafeCardProps {
   isFavorite: boolean;
   onToggleFavorite: (cafeId: string) => void;
   onViewDetails: (cafe: Cafe) => void;
+  onViewOnMap?: (cafe: Cafe) => void;
 }
 
 export const CafeCard: React.FC<CafeCardProps> = ({
@@ -26,13 +27,14 @@ export const CafeCard: React.FC<CafeCardProps> = ({
   isFavorite,
   onToggleFavorite,
   onViewDetails,
+  onViewOnMap,
 }) => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
 
-  const handleDirectionsClick = (e: React.MouseEvent) => {
+  const handleViewOnMapClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    window.open(cafe.directionsUrl, '_blank', 'noopener,noreferrer');
+    onViewOnMap?.(cafe);
   };
 
   const handleFavoriteClick = (e: React.MouseEvent) => {
@@ -72,23 +74,16 @@ export const CafeCard: React.FC<CafeCardProps> = ({
         {/* Ambient Gradient Scrim */}
         <div className="absolute inset-0 bg-gradient-to-t from-[#211A16] via-[#211A16]/20 to-transparent pointer-events-none" />
 
-        {/* AI Match & OSM/Sample Data Badges (Top Left) */}
+        {/* AI Match & Sample Data Badges (Top Left) */}
         <div className="absolute top-3.5 left-3.5 flex flex-wrap items-center gap-1.5 z-10">
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#15110F]/85 backdrop-blur-md border border-[#A98BFF]/40 text-xs font-bold text-[#A98BFF] shadow-lg">
             <Sparkles className="w-3.5 h-3.5 text-[#A98BFF]" />
             <span>{cafe.aiMatch}% Match</span>
           </div>
-          {cafe.isRealOsmData ? (
-            <div className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-[#15110F]/90 backdrop-blur-md border border-[#6FCF97]/50 text-[11px] font-bold text-[#6FCF97] shadow-md">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#6FCF97]" />
-              <span>OSM Spot</span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-[#15110F]/90 backdrop-blur-md border border-[#C88A5A]/45 text-[11px] font-bold text-[#C88A5A] shadow-md">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#C88A5A]" />
-              <span>Sample Data</span>
-            </div>
-          )}
+          <div className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-[#15110F]/90 backdrop-blur-md border border-[#C88A5A]/45 text-[11px] font-bold text-[#C88A5A] shadow-md">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#C88A5A]" />
+            <span>Sample Data</span>
+          </div>
         </div>
 
         {/* Favorite Button (Top Right) */}
@@ -200,14 +195,15 @@ export const CafeCard: React.FC<CafeCardProps> = ({
             <span>View Details</span>
           </button>
 
-          {/* Directions Button */}
+          {/* View on Map Button */}
           <button
             type="button"
-            onClick={handleDirectionsClick}
+            onClick={handleViewOnMapClick}
             className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-full bg-[#C88A5A]/15 hover:bg-[#C88A5A]/25 border border-[#C88A5A]/40 text-xs sm:text-sm font-semibold text-[#C88A5A] hover:text-[#F6EBDD] transition-all cursor-pointer active:scale-95"
+            title="Highlight cafe on interactive map"
           >
-            <Navigation className="w-3.5 h-3.5 text-[#C88A5A]" />
-            <span>Directions</span>
+            <MapPin className="w-3.5 h-3.5 text-[#C88A5A]" />
+            <span>View on Map</span>
           </button>
 
         </div>

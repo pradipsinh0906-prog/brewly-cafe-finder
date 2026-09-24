@@ -15,17 +15,8 @@ import { AboutPage } from './components/AboutPage';
 import { PrivacyPage } from './components/PrivacyPage';
 import { TermsPage } from './components/TermsPage';
 import { ScrollToTop } from './components/ScrollToTop';
-import { DEMO_CAFES, POPULAR_LOCATIONS } from './data/cafes';
+import { DEMO_CAFES, POPULAR_LOCATIONS, getCafesForLocation } from './data/cafes';
 import { Cafe } from './types/cafe';
-import {
-  getBrowserGeolocation,
-  reverseGeocodeCoordinates,
-  adaptCafesToUserLocation,
-} from './utils/geolocation';
-import {
-  discoverRealCafes,
-  geocodeLocationWithNominatim,
-} from './services/osmService';
 import {
   Sparkles,
   MapPin,
@@ -37,22 +28,23 @@ import {
   Compass,
   SlidersHorizontal,
   Check,
-  Loader2,
 } from 'lucide-react';
 
 export default function App() {
   const [currentView, setCurrentView] = useState<'home' | 'about' | 'privacy' | 'terms'>('home');
-  const [currentLocation, setCurrentLocation] = useState('Indiranagar, Bengaluru');
-  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const [cafesData, setCafesData] = useState<Cafe[]>(DEMO_CAFES);
+  const [currentLocation, setCurrentLocation] = useState('Koramangala, Bengaluru');
+  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number }>(
+    POPULAR_LOCATIONS[0].coordinates
+  );
+  const [cafesData, setCafesData] = useState<Cafe[]>(() => getCafesForLocation('Koramangala, Bengaluru'));
   const [isRealOsmData, setIsRealOsmData] = useState<boolean>(false);
-  const [isSearchingOSM, setIsSearchingOSM] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedChip, setSelectedChip] = useState<string | null>(null);
-  const [isLocating, setIsLocating] = useState(false);
-  const [favorites, setFavorites] = useState<string[]>(['cafe-1']);
+  const [favorites, setFavorites] = useState<string[]>(['kora-third-wave']);
   const [activeNav, setActiveNav] = useState('discover');
   const [selectedCafe, setSelectedCafe] = useState<Cafe | null>(null);
+  const [selectedMapCafe, setSelectedMapCafe] = useState<Cafe | null>(null);
+  const [isGeneratingAi, setIsGeneratingAi] = useState<boolean>(false);
   const [showOnlyFavorites, setShowOnlyFavorites] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastType, setToastType] = useState<'success' | 'favorite' | 'ai'>('success');
@@ -79,120 +71,83 @@ export default function App() {
     });
   };
 
-  const handleUseCurrentLocation = async () => {
-    setIsLocating(true);
-    setIsSearchingOSM(true);
-    try {
-      // 1. Get real device coordinates via browser geolocation
-      const coords = await getBrowserGeolocation();
-      setUserCoords(coords);
-
-      // 2. Reverse geocode coordinates via OpenStreetMap Nominatim
-      const geocoded = await reverseGeocodeCoordinates(coords.lat, coords.lng);
-      setCurrentLocation(geocoded.displayName);
-
-      // 3. Query real cafes from OpenStreetMap via Overpass API and enrich with Gemini
-      const osmResult = await discoverRealCafes({
-        lat: coords.lat,
-        lng: coords.lng,
-        searchQuery,
-      });
-
-      if (osmResult.cafes.length > 0) {
-        setCafesData(osmResult.cafes);
-        setIsRealOsmData(true);
-        setSelectedCafe((prev) => (prev ? osmResult.cafes.find((c) => c.id === prev.id) || osmResult.cafes[0] : null));
-        showToast(
-          `✨ Located at ${geocoded.displayName}! Found ${osmResult.cafes.length} real cafes via OpenStreetMap & Gemini AI.`,
-          'success'
-        );
-      } else {
-        const localizedCafes = adaptCafesToUserLocation(DEMO_CAFES, coords, geocoded);
-        setCafesData(localizedCafes);
-        showToast(`📍 Located at ${geocoded.displayName}!`, 'success');
-      }
-    } catch (err: unknown) {
-      const errorMsg = err instanceof Error ? err.message : 'Could not detect location';
-      showToast(errorMsg, 'ai');
-    } finally {
-      setIsLocating(false);
-      setIsSearchingOSM(false);
-    }
-  };
-
   const handleSelectLocation = async (locLabel: string) => {
     setCurrentLocation(locLabel);
-    setIsSearchingOSM(true);
+    setSelectedCafe(null);
+    setIsRealOsmData(false);
+
+    const pop = POPULAR_LOCATIONS.find((l) => l.label === locLabel);
+    const coords = pop?.coordinates || { lat: 12.9345, lng: 77.6265 };
+    setUserCoords(coords);
+
+    setIsGeneratingAi(true);
+    showToast(`Generating fresh AI recommendations for ${locLabel.split(',')[0]}...`, 'ai');
 
     try {
-      // 1. Convert location into coordinates via OpenStreetMap Nominatim API
-      let coords = userCoords;
-      const geoResult = await geocodeLocationWithNominatim(locLabel);
-      if (geoResult) {
-        coords = { lat: geoResult.lat, lng: geoResult.lng };
-        setUserCoords(coords);
-      } else {
-        const popular = POPULAR_LOCATIONS.find((l) => l.label === locLabel);
-        if (popular && popular.coordinates) {
-          coords = popular.coordinates;
-          setUserCoords(coords);
-        }
-      }
-
-      // 2. Search real cafes near those coordinates with Overpass API & Gemini
-      if (coords) {
-        const osmResult = await discoverRealCafes({
-          lat: coords.lat,
-          lng: coords.lng,
-          locationQuery: locLabel,
+      const resp = await fetch('/api/ai/generate-cafes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: locLabel,
+          coordinates: coords,
           searchQuery,
-        });
+        }),
+      });
 
-        if (osmResult.cafes.length > 0) {
-          setCafesData(osmResult.cafes);
-          setIsRealOsmData(true);
-          setSelectedCafe(null);
-          showToast(`Discovered ${osmResult.cafes.length} real cafes in ${locLabel.split(',')[0]} via OpenStreetMap!`, 'success');
+      if (resp.ok) {
+        const data = await resp.json();
+        if (Array.isArray(data.cafes) && data.cafes.length > 0) {
+          setCafesData(data.cafes);
+          setSelectedMapCafe(data.cafes[0]);
+          showToast(`Generated ${data.cafes.length} fresh sample cafes for ${locLabel.split(',')[0]}!`, 'success');
           return;
         }
       }
-    } catch (err) {
-      console.warn('Location switch OSM fetch error:', err);
-    } finally {
-      setIsSearchingOSM(false);
-    }
 
-    showToast(`Location switched to ${locLabel}`, 'success');
+      // Fallback to static location dataset if fetch response didn't contain cafes
+      const fallbackCafes = getCafesForLocation(locLabel);
+      setCafesData(fallbackCafes);
+      setSelectedMapCafe(fallbackCafes[0] || null);
+      showToast(`Showing sample cafes for ${locLabel}`, 'success');
+    } catch (err) {
+      console.warn('AI cafe generation error:', err);
+      const fallbackCafes = getCafesForLocation(locLabel);
+      setCafesData(fallbackCafes);
+      setSelectedMapCafe(fallbackCafes[0] || null);
+      showToast(`Showing sample cafes for ${locLabel}`, 'success');
+    } finally {
+      setIsGeneratingAi(false);
+    }
   };
 
-  const handleSearch = async (query: string) => {
+  const handleViewOnMap = (cafe: Cafe) => {
+    // Close modal if open
+    setSelectedCafe(null);
+    // Focus map on this specific cafe
+    setSelectedMapCafe(cafe);
+
+    if (currentView !== 'home') {
+      setCurrentView('home');
+    }
+
+    setTimeout(() => {
+      const mapElement = document.getElementById('map');
+      if (mapElement) {
+        mapElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 60);
+
+    showToast(`Viewing "${cafe.name}" on the map`, 'success');
+  };
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
     const resultsElement = document.getElementById('results-section');
     if (resultsElement) {
       resultsElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-
-    if (!query.trim()) return;
-
-    setIsSearchingOSM(true);
-    showToast(`Gemini AI analyzing real cafes for: "${query}"...`, 'ai');
-
-    try {
-      const osmResult = await discoverRealCafes({
-        lat: userCoords?.lat,
-        lng: userCoords?.lng,
-        locationQuery: currentLocation,
-        searchQuery: query,
-      });
-
-      if (osmResult.cafes.length > 0) {
-        setCafesData(osmResult.cafes);
-        setIsRealOsmData(true);
-        showToast(`✨ Gemini evaluated ${osmResult.cafes.length} OpenStreetMap spots for "${query}"`, 'ai');
-      }
-    } catch (err) {
-      console.warn('Search OSM discovery error:', err);
-    } finally {
-      setIsSearchingOSM(false);
+    if (query.trim()) {
+      showToast(`Showing results for "${query}" in ${currentLocation.split(',')[0]}`, 'ai');
     }
   };
 
@@ -259,8 +214,6 @@ export default function App() {
       <Navbar
         currentLocation={currentLocation}
         onSelectLocation={handleSelectLocation}
-        onUseCurrentLocation={handleUseCurrentLocation}
-        isLocating={isLocating}
         favoritesCount={favorites.length}
         onOpenFavorites={handleOpenFavorites}
         activeNav={activeNav}
@@ -310,12 +263,11 @@ export default function App() {
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
               onSearch={handleSearch}
-              onUseCurrentLocation={handleUseCurrentLocation}
-              isLocating={isLocating}
+              currentLocation={currentLocation}
+              onSelectLocation={handleSelectLocation}
               selectedChip={selectedChip}
               setSelectedChip={(chipId) => {
                 setSelectedChip(chipId);
-                const chip = chipId ? DEMO_CAFES : null; // or match prompt
               }}
               isRealOsmData={isRealOsmData}
             />
@@ -340,17 +292,10 @@ export default function App() {
                 <h2 className="text-2xl sm:text-3xl font-extrabold text-[#F6EBDD] font-display">
                   {showOnlyFavorites ? 'Bookmarked Spots' : 'Top Discovered Cafes'}
                 </h2>
-                {isRealOsmData ? (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#1A261D] border border-[#6FCF97]/40 text-xs font-bold text-[#6FCF97]">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#6FCF97]" />
-                    <span>OpenStreetMap Live Data</span>
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#6F4E37]/30 border border-[#C88A5A]/35 text-xs font-bold text-[#C88A5A]">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#C88A5A]" />
-                    <span>Sample Data</span>
-                  </span>
-                )}
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#6F4E37]/30 border border-[#C88A5A]/35 text-xs font-bold text-[#C88A5A]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#C88A5A]" />
+                  <span>Sample Data</span>
+                </span>
               </div>
             </div>
 
@@ -370,15 +315,30 @@ export default function App() {
             </div>
           </div>
 
-          {/* OSM Live Query Banner */}
-          {isSearchingOSM && (
-            <div className="mb-6 p-4 rounded-2xl bg-[#211A16] border border-[#A98BFF]/35 flex items-center justify-between gap-3 text-xs text-[#F6EBDD] shadow-lg animate-pulse">
+          {/* Active Area Banner */}
+          <div className="mb-6 p-4 rounded-2xl bg-[#211A16] border border-[#F6EBDD]/10 flex items-center justify-between gap-3 text-xs text-[#F6EBDD] shadow-md">
+            <div className="flex items-center gap-2.5">
+              <MapPin className="w-4 h-4 text-[#C88A5A] shrink-0" />
+              <span>
+                Exploring top sample cafes in <strong className="text-[#F6EBDD] font-semibold">{currentLocation}</strong>. Pick another neighborhood from the location dropdown anytime!
+              </span>
+            </div>
+            <span className="text-[#C88A5A] font-semibold text-[11px] shrink-0 bg-[#6F4E37]/30 border border-[#C88A5A]/30 px-2.5 py-1 rounded-full">
+              {filteredCafes.length} Sample Spots
+            </span>
+          </div>
+
+          {/* AI Generating Indicator Banner */}
+          {isGeneratingAi && (
+            <div className="mb-6 p-4 rounded-2xl bg-[#A98BFF]/10 border border-[#A98BFF]/30 flex items-center justify-between gap-3 text-xs text-[#F6EBDD] animate-pulse shadow-lg">
               <div className="flex items-center gap-2.5">
-                <Loader2 className="w-4 h-4 text-[#A98BFF] animate-spin shrink-0" />
-                <span>Querying OpenStreetMap (Overpass & Nominatim) and enriching with Gemini AI insights...</span>
+                <Sparkles className="w-4 h-4 text-[#A98BFF] animate-spin shrink-0" />
+                <span>
+                  Crafting fresh, realistic cafe concepts for <strong className="text-[#A98BFF] font-semibold">{currentLocation}</strong> with Gemini AI...
+                </span>
               </div>
-              <span className="text-[#A98BFF] font-semibold text-[11px] shrink-0 bg-[#A98BFF]/10 px-2 py-0.5 rounded">
-                Live OSM
+              <span className="text-[#A98BFF] font-bold text-[11px] shrink-0 bg-[#A98BFF]/20 px-2.5 py-1 rounded-full border border-[#A98BFF]/30">
+                Generating Sample Data
               </span>
             </div>
           )}
@@ -393,6 +353,7 @@ export default function App() {
                   isFavorite={favorites.includes(cafe.id)}
                   onToggleFavorite={handleToggleFavorite}
                   onViewDetails={(c) => setSelectedCafe(c)}
+                  onViewOnMap={handleViewOnMap}
                 />
               ))}
             </div>
@@ -501,15 +462,14 @@ export default function App() {
           </div>
         </section>
 
-        {/* Interactive Google Map Section */}
+        {/* Interactive Cafe Map Section */}
         <CafeMapSection
           cafes={filteredCafes.length > 0 ? filteredCafes : cafesData}
           selectedCafe={selectedCafe}
           onSelectCafe={(cafe) => setSelectedCafe(cafe)}
           onViewDetails={(cafe) => setSelectedCafe(cafe)}
           currentLocation={currentLocation}
-          onUseCurrentLocation={handleUseCurrentLocation}
-          isLocating={isLocating}
+          onSelectLocation={handleSelectLocation}
           userLocationCoords={userCoords}
         />
         </>
