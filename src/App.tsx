@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
 import { CafeCard } from './components/CafeCard';
@@ -32,6 +32,8 @@ import {
   Check,
 } from 'lucide-react';
 
+const FAVORITES_STORAGE_KEY = 'brewly_favorite_cafes';
+
 export default function App() {
   const [currentView, setCurrentView] = useState<'home' | 'map' | 'about' | 'privacy' | 'terms' | 'favorites'>('home');
   const [currentLocation, setCurrentLocation] = useState('Ahmedabad');
@@ -42,7 +44,22 @@ export default function App() {
   const [isRealOsmData, setIsRealOsmData] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedChip, setSelectedChip] = useState<string | null>(null);
-  const [favorites, setFavorites] = useState<string[]>(['ahm-1']);
+  const [favorites, setFavorites] = useState<string[]>(() => {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        const stored = localStorage.getItem(FAVORITES_STORAGE_KEY);
+        if (stored !== null) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) {
+            return parsed;
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to read favorites from localStorage:', err);
+      }
+    }
+    return ['ahm-1'];
+  });
   const [activeNav, setActiveNav] = useState('discover');
   const [selectedCafe, setSelectedCafe] = useState<Cafe | null>(null);
   const [selectedMapCafe, setSelectedMapCafe] = useState<Cafe | null>(null);
@@ -50,6 +67,17 @@ export default function App() {
   const [showOnlyFavorites, setShowOnlyFavorites] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastType, setToastType] = useState<'success' | 'favorite' | 'ai'>('success');
+
+  // Keep localStorage in sync whenever favorites change
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(favorites));
+      } catch (err) {
+        console.warn('Failed to save favorites to localStorage:', err);
+      }
+    }
+  }, [favorites]);
 
   const showToast = (msg: string, type: 'success' | 'favorite' | 'ai' = 'success') => {
     setToastMessage(msg);
@@ -70,6 +98,13 @@ export default function App() {
         showToast(`Removed ${cafe?.name ?? 'cafe'} from favorites`, 'favorite');
       } else {
         showToast(`Saved ${cafe?.name ?? 'cafe'} to your favorites!`, 'favorite');
+      }
+      try {
+        if (typeof window !== 'undefined' && window.localStorage) {
+          localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(updated));
+        }
+      } catch (err) {
+        console.warn('Failed to save updated favorites directly to localStorage:', err);
       }
       return updated;
     });
