@@ -1036,3 +1036,30 @@ export function getCafesForLocation(locationLabel: string): Cafe[] {
 
   return list.map((c) => ({ ...c, isRealOsmData: false }));
 }
+
+/**
+ * All pre-configured curated cafes across all cities and demo set
+ */
+export const ALL_PRESET_CAFES: Cafe[] = Array.from(
+  new Map(
+    [...DEMO_CAFES, ...Object.values(CAFES_BY_LOCATION).flat()].map((c) => [c.id, c])
+  ).values()
+);
+
+/**
+ * Helper to find a cafe by ID across all presets, dynamic cafes, or aliases
+ */
+export function findCafeById(id: string, dynamicCafes: Cafe[] = []): Cafe | undefined {
+  if (id === 'kora-third-wave') {
+    return (
+      dynamicCafes.find((c) => c.id === 'ahm-1' || c.id === 'krm-2') ||
+      ALL_PRESET_CAFES.find((c) => c.id === 'ahm-1') ||
+      ALL_PRESET_CAFES.find((c) => c.id === 'krm-2')
+    );
+  }
+  return (
+    dynamicCafes.find((c) => c.id === id) ||
+    ALL_PRESET_CAFES.find((c) => c.id === id) ||
+    DEMO_CAFES.find((c) => c.id === id)
+  );
+}

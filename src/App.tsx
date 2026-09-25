@@ -14,13 +14,15 @@ import { Toast } from './components/Toast';
 import { AboutPage } from './components/AboutPage';
 import { PrivacyPage } from './components/PrivacyPage';
 import { TermsPage } from './components/TermsPage';
+import { FavoritesPage } from './components/FavoritesPage';
 import { ScrollToTop } from './components/ScrollToTop';
-import { DEMO_CAFES, POPULAR_LOCATIONS, getCafesForLocation } from './data/cafes';
+import { DEMO_CAFES, POPULAR_LOCATIONS, getCafesForLocation, ALL_PRESET_CAFES, findCafeById } from './data/cafes';
 import { Cafe } from './types/cafe';
 import {
   Sparkles,
   MapPin,
   Coffee,
+  Heart,
   Wifi,
   Volume2,
   Zap,
@@ -31,7 +33,7 @@ import {
 } from 'lucide-react';
 
 export default function App() {
-  const [currentView, setCurrentView] = useState<'home' | 'map' | 'about' | 'privacy' | 'terms'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'map' | 'about' | 'privacy' | 'terms' | 'favorites'>('home');
   const [currentLocation, setCurrentLocation] = useState('Ahmedabad');
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number }>(
     POPULAR_LOCATIONS[0].coordinates
@@ -40,7 +42,7 @@ export default function App() {
   const [isRealOsmData, setIsRealOsmData] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedChip, setSelectedChip] = useState<string | null>(null);
-  const [favorites, setFavorites] = useState<string[]>(['kora-third-wave']);
+  const [favorites, setFavorites] = useState<string[]>(['ahm-1']);
   const [activeNav, setActiveNav] = useState('discover');
   const [selectedCafe, setSelectedCafe] = useState<Cafe | null>(null);
   const [selectedMapCafe, setSelectedMapCafe] = useState<Cafe | null>(null);
@@ -59,9 +61,11 @@ export default function App() {
 
   const handleToggleFavorite = (cafeId: string) => {
     setFavorites((prev) => {
-      const exists = prev.includes(cafeId);
-      const updated = exists ? prev.filter((id) => id !== cafeId) : [...prev, cafeId];
-      const cafe = cafesData.find((c) => c.id === cafeId) || DEMO_CAFES.find((c) => c.id === cafeId);
+      const exists = prev.includes(cafeId) || (cafeId === 'ahm-1' && prev.includes('kora-third-wave'));
+      const updated = exists
+        ? prev.filter((id) => id !== cafeId && id !== 'kora-third-wave')
+        : [...prev, cafeId];
+      const cafe = findCafeById(cafeId, cafesData);
       if (exists) {
         showToast(`Removed ${cafe?.name ?? 'cafe'} from favorites`, 'favorite');
       } else {
@@ -70,6 +74,13 @@ export default function App() {
       return updated;
     });
   };
+
+  // Full Cafe objects for all user favorites across presets, dynamic cafes and current location
+  const savedCafesList = useMemo(() => {
+    return favorites
+      .map((favId) => findCafeById(favId, cafesData))
+      .filter((cafe): cafe is Cafe => Boolean(cafe));
+  }, [favorites, cafesData]);
 
   const handleSelectLocation = async (locLabel: string) => {
     setCurrentLocation(locLabel);
@@ -142,14 +153,9 @@ export default function App() {
     }
 
     if (id === 'favorites') {
-      setCurrentView('home');
+      setCurrentView('favorites');
       setShowOnlyFavorites(true);
-      setTimeout(() => {
-        const resultsElement = document.getElementById('results-section');
-        if (resultsElement) {
-          resultsElement.scrollIntoView({ behavior: 'smooth' });
-        }
-      }, 60);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
@@ -174,6 +180,7 @@ export default function App() {
 
     if (href) {
       setCurrentView('home');
+      setShowOnlyFavorites(false);
       setTimeout(() => {
         const el = document.querySelector(href);
         if (el) el.scrollIntoView({ behavior: 'smooth' });
@@ -207,11 +214,7 @@ export default function App() {
 
   // Filter cafes based on search query / prompt / favorites
   const filteredCafes = useMemo(() => {
-    let list = cafesData;
-
-    if (showOnlyFavorites) {
-      list = list.filter((c) => favorites.includes(c.id));
-    }
+    let list = showOnlyFavorites ? savedCafesList : cafesData;
 
     if (!searchQuery.trim()) {
       return list;
@@ -242,7 +245,7 @@ export default function App() {
 
       return matchName || matchTagline || matchCategory || matchArea || matchVibes || matchAmenities || matchReasoning || matchKeywords;
     });
-  }, [cafesData, searchQuery, showOnlyFavorites, favorites]);
+  }, [cafesData, savedCafesList, searchQuery, showOnlyFavorites]);
 
   return (
     <div className="min-h-screen bg-[#15110F] text-[#F6EBDD] flex flex-col font-sans selection:bg-[#6F4E37]/50 selection:text-[#F6EBDD]">
@@ -287,6 +290,18 @@ export default function App() {
           />
         )}
 
+        {/* Dedicated Favorites ("My Brewly") Page View */}
+        {currentView === 'favorites' && (
+          <FavoritesPage
+            savedCafes={savedCafesList}
+            allFavoritesIds={favorites}
+            onToggleFavorite={handleToggleFavorite}
+            onViewDetails={(cafe) => setSelectedCafe(cafe)}
+            onViewOnMap={handleViewOnMap}
+            onBackToDiscover={() => handleNavClick('discover', '#discover')}
+          />
+        )}
+
         {/* Dedicated Full Map Page View */}
         {currentView === 'map' && (
           <CafeMapSection
@@ -324,24 +339,33 @@ export default function App() {
           {/* Section Header */}
           <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4 mb-8 sm:mb-10 pb-4 border-b border-[#F6EBDD]/10">
             <div>
-              <div className="flex items-center gap-2 mb-2 text-xs font-bold text-[#A98BFF] uppercase tracking-wider">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>
-                  {showOnlyFavorites
-                    ? 'Your Saved Cafes'
-                    : searchQuery
-                    ? `AI Matches for "${searchQuery}"`
-                    : `Recommended Spots in ${currentLocation.split(',')[0]}`}
-                </span>
+              <div className="flex items-center gap-2 mb-2 text-xs font-bold uppercase tracking-wider">
+                {showOnlyFavorites ? (
+                  <div className="flex items-center gap-1.5 text-[#FF7676]">
+                    <Heart className="w-3.5 h-3.5 fill-[#FF7676] text-[#FF7676]" />
+                    <span>My Brewly</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5 text-[#A98BFF]">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>
+                      {searchQuery
+                        ? `AI Matches for "${searchQuery}"`
+                        : `Recommended Spots in ${currentLocation.split(',')[0]}`}
+                    </span>
+                  </div>
+                )}
               </div>
               <div className="flex flex-wrap items-center gap-3">
                 <h2 className="text-2xl sm:text-3xl font-extrabold text-[#F6EBDD] font-display">
                   {showOnlyFavorites ? 'Bookmarked Spots' : 'Top Discovered Cafes'}
                 </h2>
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#6F4E37]/30 border border-[#C88A5A]/35 text-xs font-bold text-[#C88A5A]">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#C88A5A]" />
-                  <span>Sample Data</span>
-                </span>
+                {!showOnlyFavorites && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#6F4E37]/30 border border-[#C88A5A]/35 text-xs font-bold text-[#C88A5A]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#C88A5A]" />
+                    <span>Sample Data</span>
+                  </span>
+                )}
               </div>
             </div>
 
@@ -356,23 +380,37 @@ export default function App() {
                 </button>
               )}
               <span className="text-xs text-[#D8C5B5]/70 bg-[#211A16] border border-[#F6EBDD]/10 px-3 py-1.5 rounded-full font-medium tabular-nums">
-                {filteredCafes.length} {filteredCafes.length === 1 ? 'cafe' : 'cafes'} found
+                {filteredCafes.length} {filteredCafes.length === 1 ? 'cafe' : 'cafes'} {showOnlyFavorites ? 'saved' : 'found'}
               </span>
             </div>
           </div>
 
           {/* Active Area Banner */}
-          <div className="mb-6 p-4 rounded-2xl bg-[#211A16] border border-[#F6EBDD]/10 flex items-center justify-between gap-3 text-xs text-[#F6EBDD] shadow-md">
-            <div className="flex items-center gap-2.5">
-              <MapPin className="w-4 h-4 text-[#C88A5A] shrink-0" />
-              <span>
-                Exploring top sample cafes in <strong className="text-[#F6EBDD] font-semibold">{currentLocation}</strong>. Pick another neighborhood from the location dropdown anytime!
+          {showOnlyFavorites ? (
+            <div className="mb-6 p-4 rounded-2xl bg-[#211A16] border border-[#F6EBDD]/10 flex items-center justify-between gap-3 text-xs text-[#F6EBDD] shadow-md">
+              <div className="flex items-center gap-2.5">
+                <Heart className="w-4 h-4 fill-[#FF7676] text-[#FF7676] shrink-0" />
+                <span>
+                  Viewing your saved favorite spots in <strong className="text-[#F6EBDD] font-semibold">My Brewly</strong>. Tap the heart on any cafe card to bookmark or remove.
+                </span>
+              </div>
+              <span className="text-[#FF7676] font-semibold text-[11px] shrink-0 bg-[#FF7676]/15 border border-[#FF7676]/30 px-2.5 py-1 rounded-full">
+                {savedCafesList.length} Saved {savedCafesList.length === 1 ? 'Spot' : 'Spots'}
               </span>
             </div>
-            <span className="text-[#C88A5A] font-semibold text-[11px] shrink-0 bg-[#6F4E37]/30 border border-[#C88A5A]/30 px-2.5 py-1 rounded-full">
-              {filteredCafes.length} Sample Spots
-            </span>
-          </div>
+          ) : (
+            <div className="mb-6 p-4 rounded-2xl bg-[#211A16] border border-[#F6EBDD]/10 flex items-center justify-between gap-3 text-xs text-[#F6EBDD] shadow-md">
+              <div className="flex items-center gap-2.5">
+                <MapPin className="w-4 h-4 text-[#C88A5A] shrink-0" />
+                <span>
+                  Exploring top sample cafes in <strong className="text-[#F6EBDD] font-semibold">{currentLocation}</strong>. Pick another neighborhood from the location dropdown anytime!
+                </span>
+              </div>
+              <span className="text-[#C88A5A] font-semibold text-[11px] shrink-0 bg-[#6F4E37]/30 border border-[#C88A5A]/30 px-2.5 py-1 rounded-full">
+                {filteredCafes.length} Sample Spots
+              </span>
+            </div>
+          )}
 
           {/* AI Generating Indicator Banner */}
           {isGeneratingAi && (
@@ -396,13 +434,55 @@ export default function App() {
                 <CafeCard
                   key={cafe.id}
                   cafe={cafe}
-                  isFavorite={favorites.includes(cafe.id)}
+                  isFavorite={favorites.includes(cafe.id) || (cafe.id === 'ahm-1' && favorites.includes('kora-third-wave'))}
                   onToggleFavorite={handleToggleFavorite}
                   onViewDetails={(c) => setSelectedCafe(c)}
                   onViewOnMap={handleViewOnMap}
                 />
               ))}
             </div>
+          ) : showOnlyFavorites ? (
+            favorites.length === 0 ? (
+              <div className="py-20 text-center rounded-[28px] bg-[#211A16]/50 border border-[#F6EBDD]/10 p-8 max-w-xl mx-auto shadow-2xl">
+                <div className="w-16 h-16 rounded-2xl bg-[#6F4E37]/30 border border-[#C88A5A]/30 flex items-center justify-center mx-auto mb-5">
+                  <Coffee className="w-8 h-8 text-[#C88A5A]" />
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-bold text-[#F6EBDD] mb-3 font-display">
+                  Your coffee list is empty ☕
+                </h2>
+                <p className="text-sm text-[#D8C5B5] leading-relaxed mb-6 max-w-md mx-auto">
+                  You haven't bookmarked any cafes yet. Browse discovered spots, filter by Wi-Fi or roast, and tap the heart icon on any card to save your favorite cafes here.
+                </p>
+                <button
+                  onClick={() => {
+                    setShowOnlyFavorites(false);
+                    setActiveNav('discover');
+                    setCurrentView('home');
+                  }}
+                  className="px-6 py-3 rounded-full bg-gradient-to-r from-[#6F4E37] to-[#C88A5A] hover:opacity-95 text-[#F6EBDD] text-sm font-bold transition-all shadow-lg shadow-[#6F4E37]/30 cursor-pointer active:scale-95"
+                >
+                  Discover Cafes
+                </button>
+              </div>
+            ) : (
+              <div className="py-16 text-center rounded-[28px] bg-[#211A16]/50 border border-[#F6EBDD]/10 p-8 max-w-xl mx-auto">
+                <div className="w-14 h-14 rounded-2xl bg-[#6F4E37]/30 border border-[#C88A5A]/30 flex items-center justify-center mx-auto mb-4">
+                  <Coffee className="w-7 h-7 text-[#C88A5A]" />
+                </div>
+                <h3 className="text-xl font-bold text-[#F6EBDD] mb-2 font-display">
+                  No saved spots match "{searchQuery}"
+                </h3>
+                <p className="text-sm text-[#D8C5B5] mb-6">
+                  Try another keyword or clear your search to view all your saved cafes.
+                </p>
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="px-5 py-2.5 rounded-full bg-[#6F4E37] hover:bg-[#855B3F] text-[#F6EBDD] text-xs sm:text-sm font-bold transition-colors cursor-pointer"
+                >
+                  Clear Search
+                </button>
+              </div>
+            )
           ) : (
             <div className="py-16 text-center rounded-[28px] bg-[#211A16]/50 border border-[#F6EBDD]/10 p-8 max-w-xl mx-auto">
               <div className="w-14 h-14 rounded-2xl bg-[#6F4E37]/30 border border-[#C88A5A]/30 flex items-center justify-center mx-auto mb-4">
@@ -526,7 +606,7 @@ export default function App() {
       <CafeModal
         cafe={selectedCafe}
         onClose={() => setSelectedCafe(null)}
-        isFavorite={selectedCafe ? favorites.includes(selectedCafe.id) : false}
+        isFavorite={selectedCafe ? (favorites.includes(selectedCafe.id) || (selectedCafe.id === 'ahm-1' && favorites.includes('kora-third-wave'))) : false}
         onToggleFavorite={handleToggleFavorite}
         onShare={handleShare}
         onViewOnMap={handleViewOnMap}
