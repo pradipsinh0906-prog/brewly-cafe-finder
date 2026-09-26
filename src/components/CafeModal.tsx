@@ -33,6 +33,8 @@ export const CafeModal: React.FC<CafeModalProps> = ({
   onShare,
   onViewOnMap,
 }) => {
+  const [isBouncingHeart, setIsBouncingHeart] = React.useState(false);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -237,14 +239,22 @@ export const CafeModal: React.FC<CafeModalProps> = ({
           {/* Favorite Toggle Button */}
           <button
             type="button"
-            onClick={() => onToggleFavorite(cafe.id)}
-            className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-full border text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
+            onClick={() => {
+              setIsBouncingHeart(true);
+              setTimeout(() => setIsBouncingHeart(false), 360);
+              onToggleFavorite(cafe.id);
+            }}
+            className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-full border text-xs sm:text-sm font-semibold transition-all cursor-pointer active:scale-95 ${
               isFavorite
-                ? 'bg-[#FF7676]/20 border-[#FF7676]/40 text-[#FF7676]'
+                ? 'bg-[#FF7676]/20 border-[#FF7676]/40 text-[#FF7676] shadow-[0_0_12px_rgba(255,118,118,0.2)]'
                 : 'bg-[#211A16] border-[#F6EBDD]/15 text-[#F6EBDD] hover:bg-[#2A211C]'
             }`}
           >
-            <Heart className={`w-4 h-4 ${isFavorite ? 'fill-[#FF7676]' : ''}`} />
+            <Heart
+              className={`w-4 h-4 transition-colors ${
+                isBouncingHeart ? 'animate-heart-bounce' : ''
+              } ${isFavorite ? 'fill-[#FF7676]' : ''}`}
+            />
             <span>{isFavorite ? 'Saved' : 'Save'}</span>
           </button>
 

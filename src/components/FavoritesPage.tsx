@@ -136,10 +136,11 @@ export const FavoritesPage: React.FC<FavoritesPageProps> = ({
         /* Render Saved Cafe Cards Grid */
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 sm:gap-8">
-            {filteredSavedCafes.map((cafe) => (
+            {filteredSavedCafes.map((cafe, index) => (
               <CafeCard
                 key={cafe.id}
                 cafe={cafe}
+                index={index}
                 isFavorite={true}
                 onToggleFavorite={onToggleFavorite}
                 onViewDetails={onViewDetails}

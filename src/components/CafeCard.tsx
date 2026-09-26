@@ -20,6 +20,7 @@ interface CafeCardProps {
   onToggleFavorite: (cafeId: string) => void;
   onViewDetails: (cafe: Cafe) => void;
   onViewOnMap?: (cafe: Cafe) => void;
+  index?: number;
 }
 
 export const CafeCard: React.FC<CafeCardProps> = ({
@@ -28,9 +29,11 @@ export const CafeCard: React.FC<CafeCardProps> = ({
   onToggleFavorite,
   onViewDetails,
   onViewOnMap,
+  index = 0,
 }) => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [isBouncingHeart, setIsBouncingHeart] = useState(false);
 
   const handleViewOnMapClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -39,13 +42,16 @@ export const CafeCard: React.FC<CafeCardProps> = ({
 
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    setIsBouncingHeart(true);
+    setTimeout(() => setIsBouncingHeart(false), 360);
     onToggleFavorite(cafe.id);
   };
 
   return (
     <article
       onClick={() => onViewDetails(cafe)}
-      className="group relative bg-[#211A16] hover:bg-[#261E1A] rounded-[24px] border border-[#F6EBDD]/10 hover:border-[#C88A5A]/40 overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 flex flex-col cursor-pointer hover:-translate-y-1"
+      style={{ animationDelay: `${Math.min(index * 60, 300)}ms` }}
+      className="group relative bg-[#211A16] hover:bg-[#261E1A] rounded-[24px] border border-[#F6EBDD]/10 hover:border-[#C88A5A]/40 overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 flex flex-col cursor-pointer hover:-translate-y-1 animate-card-fade-up"
     >
       {/* Top Image Container */}
       <div className="relative aspect-[16/10] w-full overflow-hidden bg-[#15110F]">
@@ -74,10 +80,45 @@ export const CafeCard: React.FC<CafeCardProps> = ({
         {/* Ambient Gradient Scrim */}
         <div className="absolute inset-0 bg-gradient-to-t from-[#211A16] via-[#211A16]/20 to-transparent pointer-events-none" />
 
+        {/* Subtle Steam Wisps on Hover */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center overflow-hidden z-10"
+        >
+          <div className="w-16 h-20 relative flex justify-center items-center opacity-45 group-hover:opacity-60 transition-opacity">
+            <svg
+              className="w-12 h-16 text-[#F6EBDD] drop-shadow-[0_0_8px_rgba(246,235,221,0.25)]"
+              viewBox="0 0 36 50"
+              fill="none"
+              stroke="currentColor"
+            >
+              <path
+                d="M10 44 C7 34 15 28 11 18 C8 9 13 4 11 0"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                className="animate-steam-1"
+              />
+              <path
+                d="M18 46 C21 36 15 30 19 20 C23 10 17 4 19 0"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                className="animate-steam-2"
+              />
+              <path
+                d="M26 44 C24 35 30 29 26 19 C23 10 28 4 26 0"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                className="animate-steam-1"
+                style={{ animationDelay: '0.7s' }}
+              />
+            </svg>
+          </div>
+        </div>
+
         {/* AI Match & Sample Data Badges (Top Left) */}
-        <div className="absolute top-3.5 left-3.5 flex flex-wrap items-center gap-1.5 z-10">
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#15110F]/85 backdrop-blur-md border border-[#A98BFF]/40 text-xs font-bold text-[#A98BFF] shadow-lg">
-            <Sparkles className="w-3.5 h-3.5 text-[#A98BFF]" />
+        <div className="absolute top-3.5 left-3.5 flex flex-wrap items-center gap-1.5 z-20">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#15110F]/85 backdrop-blur-md border border-[#A98BFF]/40 text-xs font-bold text-[#A98BFF] shadow-lg animate-badge-glow">
+            <Sparkles className="w-3.5 h-3.5 text-[#A98BFF] group-hover:rotate-12 transition-transform duration-300" />
             <span>{cafe.aiMatch}% Match</span>
           </div>
           <div className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-[#15110F]/90 backdrop-blur-md border border-[#C88A5A]/45 text-[11px] font-bold text-[#C88A5A] shadow-md">
@@ -91,10 +132,16 @@ export const CafeCard: React.FC<CafeCardProps> = ({
           type="button"
           onClick={handleFavoriteClick}
           aria-label={isFavorite ? `Remove ${cafe.name} from favorites` : `Save ${cafe.name} to favorites`}
-          className="absolute top-3.5 right-3.5 w-9 h-9 rounded-full bg-[#15110F]/80 hover:bg-[#15110F] backdrop-blur-md border border-[#F6EBDD]/15 flex items-center justify-center text-[#F6EBDD] transition-transform active:scale-90 cursor-pointer shadow-lg z-10"
+          className={`absolute top-3.5 right-3.5 w-9 h-9 rounded-full bg-[#15110F]/80 hover:bg-[#15110F] backdrop-blur-md border flex items-center justify-center text-[#F6EBDD] transition-all active:scale-90 cursor-pointer shadow-lg z-20 ${
+            isFavorite
+              ? 'border-[#FF7676]/45 shadow-[0_0_12px_rgba(255,118,118,0.25)]'
+              : 'border-[#F6EBDD]/15 hover:border-[#FF7676]/35'
+          }`}
         >
           <Heart
             className={`w-4.5 h-4.5 transition-colors ${
+              isBouncingHeart ? 'animate-heart-bounce' : ''
+            } ${
               isFavorite
                 ? 'fill-[#FF7676] text-[#FF7676]'
                 : 'text-[#F6EBDD] hover:text-[#FF7676]'

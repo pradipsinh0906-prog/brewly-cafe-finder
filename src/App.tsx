@@ -465,10 +465,11 @@ export default function App() {
           {/* Cafe Cards Grid */}
           {filteredCafes.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 sm:gap-8">
-              {filteredCafes.map((cafe) => (
+              {filteredCafes.map((cafe, index) => (
                 <CafeCard
                   key={cafe.id}
                   cafe={cafe}
+                  index={index}
                   isFavorite={favorites.includes(cafe.id) || (cafe.id === 'ahm-1' && favorites.includes('kora-third-wave'))}
                   onToggleFavorite={handleToggleFavorite}
                   onViewDetails={(c) => setSelectedCafe(c)}
